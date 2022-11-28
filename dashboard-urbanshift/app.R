@@ -415,7 +415,11 @@ server <- function(input, output, session) {
     ########################
     
     # layers: esa world cover
-    if(input$indicator %in% c("Percent of Natural Areas")){
+    if(input$indicator %in% c("Natural Areas -dev",
+                              "Connectivity of ecological networks -dev",
+                              "Biodiversity in built-up areas (birds) -dev")){
+      
+      # ESA land cover
       
       esa_worldcover_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
                                        "data/land_use/esa_world_cover/v_0/",
@@ -467,9 +471,57 @@ server <- function(input, output, session) {
                                                "70","80","90","95","100"),
                                     na.color = "transparent")
       
+      # ESA land cover - natural areas
+      city_worldcover_natural_areas_mask = city_esa_worldcover
+      
+      city_worldcover_natural_areas_mask[!city_worldcover_natural_areas_mask%in% c("10","20","30","90","95","100")] <- NA
+      
+      city_worldcover_natural_areas = mask(x = city_esa_worldcover,
+                                           mask = city_worldcover_natural_areas_mask)
+      
     }
     
     
+    # layers: OSM open space ----
+    if(input$indicator %in% c("Recreational space per capita")){
+      osm_open_space = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/open_space/openstreetmap/v_0/",
+                                     geo_name,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-OSM-open_space-2022.geojson",
+                                     sep = "")
+      )
+      
+    }
+    
+    
+    # layers: population ----
+    if(input$indicator %in% c("Recreational space per capita")){
+      pop_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
+                            geo_name,
+                            "-",
+                            aoi_boundary_name,
+                            "-WorldPop-population-2020.tif",
+                            sep = "")
+      
+      # collect raster data
+      city_pop = raster(pop_data_path)
+      
+      city_pop_boundary = raster::mask(city_pop,
+                                       boundary_aoi)
+      
+      # color pop
+      pop_values = values(city_pop_boundary)[!is.na(values(city_pop_boundary))]
+      
+      pal_pop <- colorNumeric("RdYlBu",
+                              pop_values,
+                              na.color = "transparent",
+                              reverse = TRUE)
+      
+    }
+    
+    
+
     ########################
     # map indicator ----
     ########################
@@ -498,7 +550,7 @@ server <- function(input, output, session) {
                     direction = "auto")) %>%
       # indicator layer - value
       addPolygons(data = unit_indicators,
-                  group = selected_indicator_label,
+                  group = selected_indicator_legend,
                   fillColor = ~pal_indicator(selected_indicator_values),
                   weight = 1,
                   opacity = 1,
@@ -514,22 +566,22 @@ server <- function(input, output, session) {
       addLegend(pal = pal_indicator,
                 values = selected_indicator_values,
                 opacity = 0.9,
-                title = selected_indicator_label,
-                group = selected_indicator_label,
+                title = selected_indicator_legend,
+                group = selected_indicator_legend,
                 position = "topright",
                 labFormat = labelFormat(suffix = "")) %>%
       
       # Layers control
       addLayersControl(
         overlayGroups = c("Administrative boundaries",
-                          selected_indicator_label),
-        options = layersControlOptions(collapsed = FALSE)
+                          selected_indicator_legend),
+        options = layersControlOptions(collapsed = TRUE)
       ) %>% 
       addFullscreenControl()
     
     
-    # Esa world cover ----
-    if(input$indicator  %in% c("Percent of Natural Areas")){
+    # Esa world cover + natural areas ----
+    if(input$indicator  %in% c("Natural Areas -dev")){
       m = m %>% 
         # plot layer: ESA world cover ----
       addRasterImage(city_esa_worldcover,
@@ -537,23 +589,124 @@ server <- function(input, output, session) {
                      opacity = 1,
                      maxBytes = 100 * 1024 * 1024,
                      project=FALSE,
-                     group = "Land cover types") %>%
+                     group = "Land cover classes (ESA World Cover)") %>%
         addLegend(colors = worldcover_col,
                   labels = worldcover_labels,
-                  title = "World Cover",
-                  group = "Land cover types",
+                  title = "Land cover classes (ESA World Cover)",
+                  group = "Land cover classes (ESA World Cover)",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Raster of natural areas
+        addRasterImage(city_worldcover_natural_areas,
+                       colors = "#65B96B",
+                       opacity = 1,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Natural areas (derived from ESA World Cover)",
+                       layerId = "Natural areas (derived from ESA World Cover)") %>%
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Land cover classes (ESA World Cover)",
+                            "Natural areas (derived from ESA World Cover)"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Land cover classes (ESA World Cover)",
+                    "Natural areas (derived from ESA World Cover)")) 
+    }
+    
+    # Esa world cover - Natural areas ----
+    if(input$indicator  %in% c("Connectivity of ecological networks -dev")){
+      m = m %>% 
+        # Raster of natural areas
+        addRasterImage(city_worldcover_natural_areas,
+                       colors = "#65B96B",
+                       opacity = 1,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Natural areas (derived from ESA World Cover)",
+                       layerId = "Natural areas (derived from ESA World Cover)") %>%
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Natural areas (derived from ESA World Cover)"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Natural areas (derived from ESA World Cover)")) 
+    }
+    
+    
+    # Esa world cover ----
+    if(input$indicator  %in% c("Biodiversity in built-up areas (birds) -dev")){
+      m = m %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover classes (ESA World Cover)") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "Land cover classes (ESA World Cover)",
+                  group = "Land cover classes (ESA World Cover)",
                   position = "bottomleft",
                   opacity = 1) %>%
         # Layers control
         addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
           overlayGroups = c("Administrative boundaries",
-                            selected_indicator_label,
-                            "Land cover types"),
-          options = layersControlOptions(collapsed = FALSE)
+                            selected_indicator_legend,
+                            "Land cover classes (ESA World Cover)"),
+          options = layersControlOptions(collapsed = TRUE)
         ) %>% 
-        hideGroup(c("Land cover types")) 
+        hideGroup(c("Land cover classes (ESA World Cover)")) 
     }
     
+    
+    # Public open space  ----
+    if(input$indicator %in% c("Recreational space per capita")){
+      m = m %>% 
+        # plot layer: OSM ----
+      addPolygons(data = osm_open_space,
+                  group = "Open spaces for public use (OpenStreetMap)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # plot layer: POP
+        addRasterImage(city_pop_boundary,
+                       colors = pal_pop ,
+                       opacity = 0.9,
+                       group = "Population density (persons per hectare, WorldPop)",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population density (persons per hectare, WorldPop)",
+                  group = "Population density (persons per hectare, WorldPop)",
+                  position = "bottomleft") %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Open spaces for public use (OpenStreetMap)",
+                          "Population density (persons per hectare, WorldPop)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Open spaces for public use (OpenStreetMap)",
+                    "Population density (persons per hectare, WorldPop)")) 
+    }
     
     
     # center map  

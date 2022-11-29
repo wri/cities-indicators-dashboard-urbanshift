@@ -1,0 +1,13 @@
+name: indicators-urbanshift-dashboard
+title: indicators-urbanshift-dashboard
+username:
+account: wri-cities
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7747429
+bundleId: 6562354
+url: https://wri-cities.shinyapps.io/indicators-urbanshift-dashboard/
+when: 1669639664.19789
+lastSyncTime: 1669639664.1979
+asMultiple: FALSE
+asStatic: FALSE

@@ -296,7 +296,13 @@ server <- function(input, output, session) {
       showTab(inputId = "tabs", target = "Table")
       hideTab(inputId = "tabs", target = "Map")
       show("city_wide_indicator") 
-    } 
+    } else if(!input$indicator %in% c("Change in greenhouse gas emissions")){
+      showTab(inputId = "tabs", target = "Table")
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Map")
+      showTab(inputId = "tabs", target = "Benchmark") 
+      show("city_wide_indicator") 
+    }
   })
   
   
@@ -415,7 +421,7 @@ server <- function(input, output, session) {
     ########################
     
     # layers: esa world cover
-    if(input$indicator %in% c("Natural Areas -dev",
+    if(input$indicator %in% c("Natural Areas",
                               "Connectivity of ecological networks -dev",
                               "Biodiversity in built-up areas (birds) -dev")){
       
@@ -426,7 +432,7 @@ server <- function(input, output, session) {
                                        geo_name,
                                        "-",
                                        aoi_boundary_name,
-                                       "-ESA-world_cover-2000.tif",
+                                       "-ESA-world_cover-2000-50m.tif",
                                        sep = "")
       
       
@@ -483,7 +489,9 @@ server <- function(input, output, session) {
     
     
     # layers: OSM open space ----
-    if(input$indicator %in% c("Recreational space per capita")){
+    if(input$indicator %in% c("Recreational space per capita",
+                              "Urban open space for public use",
+                              "Proximity to public open space")){
       osm_open_space = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/open_space/openstreetmap/v_0/",
                                      geo_name,
                                      "-",
@@ -496,7 +504,9 @@ server <- function(input, output, session) {
     
     
     # layers: population ----
-    if(input$indicator %in% c("Recreational space per capita")){
+    if(input$indicator %in% c("Recreational space per capita",
+                              "Proximity to public open space",
+                              "Proximity to tree cover")){
       pop_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
                             geo_name,
                             "-",
@@ -520,15 +530,228 @@ server <- function(input, output, session) {
       
     }
     
+    # layers: Population with access to open space within 400 meters ----
+    if(input$indicator %in% c("Proximity to public open space")){
+      pop_openspace_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
+                                      geo_name,
+                                      "-",
+                                      aoi_boundary_name,
+                                      "-population-wOpenSpace-2020.tif",
+                                      sep = "")
+      
+      # collect raster data
+      city_pop_openspace = raster(pop_openspace_data_path)
+      
+      city_pop_openspace_boundary = raster::mask(city_pop_openspace,
+                                                 boundary_aoi)
+      
+      # color pop
+      pop_openspace_values = values(city_pop_openspace_boundary)[!is.na(values(city_pop_openspace_boundary))]
+      
+      pal_pop_openspace <- colorNumeric("RdYlBu",
+                                        pop_openspace_values,
+                                        na.color = "transparent",
+                                        reverse = TRUE)
+      
+    }
     
-
+    # layers: tree cover----
+    if(input$indicator %in% c("Proximity to tree cover",
+                              "Tree cover")){
+      tml_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
+                            geo_name,
+                            "-",
+                            aoi_boundary_name,
+                            "-TML-tree_cover-2000.tif",
+                            sep = "")
+      
+      # collect raster data
+      city_tml = raster(tml_data_path)
+      
+      city_tml_boundary = raster::mask(city_tml,
+                                       boundary_aoi)
+      
+      city_tml_boundary[city_tml_boundary==0] = NA
+      
+      # define color for tree cover
+      pal_tml <- colorNumeric(palette = "Greens",
+                              domain = values(city_tml_boundary), 
+                              na.color = "transparent")
+      
+    }
+    
+    # layers: Population with access to at least 10% mean tree cover within 400 meters (persons per hectare) ----
+    if(input$indicator %in% c("Proximity to tree cover")){
+      
+      pop_tree_cover_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
+                                       geo_name,
+                                       "-",
+                                       aoi_boundary_name,
+                                       "-population-wTreeCover-2020.tif",
+                                       sep = "")
+      
+      # collect raster data
+      pop_tree_cover_data = raster(pop_tree_cover_data_path)
+      
+      city_pop_tree_cover = raster::mask(pop_tree_cover_data,
+                                         boundary_aoi)
+      
+      # color pop
+      pop_tree_cover_values = values(city_pop_tree_cover)[!is.na(values(city_pop_tree_cover))]
+      
+      pal_pop_tree_cover <- colorNumeric("RdYlBu",
+                                         pop_tree_cover_values,
+                                         na.color = "transparent",
+                                         reverse = TRUE)
+      
+    }
+    
+    # layers: Flooding impervious surfaces  -----
+    if(input$indicator == "Permeable areas"){
+      
+      impervious_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/impervious/tsinghua/v_0/",
+                                   geo_name,
+                                   "-",
+                                   aoi_boundary_name,
+                                   "-impervious-areas-through-2018.tif",
+                                   sep = "")
+      
+      # collect raster data
+      city_impervious = raster(impervious_data_path)
+      
+      
+      city_impervious_boundary = raster::mask(city_impervious,
+                                              boundary_aoi)
+      city_impervious_boundary[city_impervious_boundary==0] = NA
+      
+      # color  
+      impervious_values = values(city_impervious_boundary)[!is.na(values(city_impervious_boundary))]
+      
+      pal_impervious <- colorNumeric("Greys", 
+                                     impervious_values,
+                                     na.color = "transparent",
+                                     reverse = FALSE)
+      
+      
+      
+      
+    }
+    
+    # layers: Protected areas ----
+    if(input$indicator %in% c("Protected areas",
+                              "Protection of Key Biodiversity Areas")){
+      wdpa = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/WDPA/v_1/",
+                           geo_name,
+                           "-",
+                           aoi_boundary_name,
+                           "-WDPA-2022.geojson",
+                           sep = "")
+      )
+      
+    }
+    
+    # layers: Key Biodiversity Areas ----
+    if(input$indicator %in% c("Protection of Key Biodiversity Areas",
+                              "Built-up Key Biodiversity Areas")){
+      kba = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/KBA/v_1/",
+                          geo_name,
+                          "-",
+                          aoi_boundary_name,
+                          "-KBA-2022.geojson",
+                          sep = "")
+      )
+      
+    }
+    
+    # layers: GBIF - Vascular plant species  ----
+    if(input$indicator %in% c("Vascular plant species")){
+      gbif_Tracheophyta = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Tracheophyta-",
+                                        geo_name,
+                                        "-",
+                                        aoi_boundary_name,
+                                        ".geojson",
+                                        sep = ""))
+      
+      gbif_Tracheophyta = gbif_Tracheophyta %>% 
+        mutate(long = unlist(map(gbif_Tracheophyta$geometry,1)),
+               lat = unlist(map(gbif_Tracheophyta$geometry,2))) %>% 
+        as.data.frame()
+      
+    }
+    
+    # layers: GBIF - Bird species  ----
+    if(input$indicator %in% c("Bird species")){
+      gbif_Aves = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Aves-",
+                                geo_name,
+                                "-",
+                                aoi_boundary_name,
+                                ".geojson",
+                                sep = ""))
+      
+      gbif_Aves = gbif_Aves %>% 
+        mutate(long = unlist(map(gbif_Aves$geometry,1)),
+               lat = unlist(map(gbif_Aves$geometry,2))) %>% 
+        as.data.frame()
+      
+    }
+    
+    # layers: GBIF - Arthropoda  ----
+    if(input$indicator %in% c("Arthropod species")){
+      gbif_Arthropod = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Arthropoda-",
+                                     geo_name,
+                                     "-",
+                                     aoi_boundary_name,
+                                     ".geojson",
+                                     sep = ""))
+      
+      gbif_Arthropod = gbif_Arthropod %>% 
+        mutate(long = unlist(map(gbif_Arthropod$geometry,1)),
+               lat = unlist(map(gbif_Arthropod$geometry,2))) %>% 
+        as.data.frame()
+      
+    }
+    
+    # layers: carbon flux  -----
+    if(input$indicator == "Climate change impact of trees"){
+      
+      carbonflux_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/tree_cover/wri-forest-carbon-fluxes/v_0/",
+                                   geo_name,
+                                   "-",
+                                   aoi_boundary_name,
+                                   "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021.tif",
+                                   sep = "")
+      
+      # collect raster data
+      city_carbonflux = raster(carbonflux_data_path)
+      
+      
+      city_carbonflux_boundary = raster::mask(city_carbonflux,
+                                              boundary_aoi)
+      
+      # color  
+      carbonflux_values = values(city_carbonflux_boundary)[!is.na(values(city_carbonflux_boundary))]
+      
+      pal_carbonflux <- colorNumeric("PRGn", 
+                                     carbonflux_values,
+                                     na.color = "transparent",
+                                     reverse = TRUE)
+      
+      
+      
+    }
+    
+    
     ########################
     # map indicator ----
     ########################
     
-    
+    # indicator layer ----
     m = leaflet(boundary_aoi) %>%
-      addTiles() %>%
+      # addTiles
+      addTiles(group = "OSM (default)") %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Esri") %>%
+      addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
+      addScaleBar() %>%
       fitBounds(~as.numeric(st_bbox(boundary_aoi)[1]),
                 ~as.numeric(st_bbox(boundary_aoi)[2]),
                 ~as.numeric(st_bbox(boundary_aoi)[3]),
@@ -580,8 +803,8 @@ server <- function(input, output, session) {
       addFullscreenControl()
     
     
-    # Esa world cover + natural areas ----
-    if(input$indicator  %in% c("Natural Areas -dev")){
+    # BIO-1: Natural Areas ----
+    if(input$indicator  %in% c("Natural Areas")){
       m = m %>% 
         # plot layer: ESA world cover ----
       addRasterImage(city_esa_worldcover,
@@ -606,6 +829,7 @@ server <- function(input, output, session) {
                        layerId = "Natural areas (derived from ESA World Cover)") %>%
         # Layers control
         addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -616,7 +840,7 @@ server <- function(input, output, session) {
                     "Natural areas (derived from ESA World Cover)")) 
     }
     
-    # Esa world cover - Natural areas ----
+    # BIO-2: Connectivity of ecological networks ----
     if(input$indicator  %in% c("Connectivity of ecological networks -dev")){
       m = m %>% 
         # Raster of natural areas
@@ -629,6 +853,7 @@ server <- function(input, output, session) {
                        layerId = "Natural areas (derived from ESA World Cover)") %>%
         # Layers control
         addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Natural areas (derived from ESA World Cover)"),
@@ -638,7 +863,7 @@ server <- function(input, output, session) {
     }
     
     
-    # Esa world cover ----
+    # BIO-3: Biodiversity in built-up areas (birds) ----
     if(input$indicator  %in% c("Biodiversity in built-up areas (birds) -dev")){
       m = m %>% 
         # plot layer: ESA world cover ----
@@ -665,8 +890,103 @@ server <- function(input, output, session) {
         hideGroup(c("Land cover classes (ESA World Cover)")) 
     }
     
+    # BIO-4: Vascular plant species ----
+    if(input$indicator  %in% c("Vascular plant species")){
+      m = m %>% 
+        # add gbif layer
+        addCircleMarkers(lat = gbif_Tracheophyta$lat,
+                         lng = gbif_Tracheophyta$long,
+                         radius = 3,
+                         fillColor = "green",
+                         color  = "black",
+                         stroke = TRUE,
+                         weight = 0.8,
+                         fillOpacity = 0.6,
+                         popup = gbif_Tracheophyta$species,
+                         group ="Vascular plant species") %>% 
+        # add cluster markers
+        addMarkers(lat = gbif_Tracheophyta$lat,
+                   lng = gbif_Tracheophyta$long, 
+                   clusterOptions = markerClusterOptions(),
+                   group = "Vascular plant species clusters") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Vascular plant species",
+                            "Vascular plant species clusters"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Vascular plant species",
+                    "Vascular plant species clusters")) 
+    }
     
-    # Public open space  ----
+    # BIO-5: Bird species ----
+    if(input$indicator  %in% c("Bird species")){
+      m = m %>% 
+        # add gbif layer
+        addCircleMarkers(lat = gbif_Aves$lat,
+                         lng = gbif_Aves$long,
+                         radius = 3,
+                         fillColor = "green",
+                         color  = "black",
+                         stroke = TRUE,
+                         weight = 0.8,
+                         fillOpacity = 0.6,
+                         popup = gbif_Aves$species,
+                         group ="Bird species") %>% 
+        # add cluster markers
+        addMarkers(lat = gbif_Aves$lat,
+                   lng = gbif_Aves$long, 
+                   clusterOptions = markerClusterOptions(),
+                   group = "Bird species clusters") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Bird species",
+                            "Bird species clusters"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Bird species",
+                    "Bird species clusters")) 
+    }
+    
+    # BIO-6: Arthropod species ----
+    if(input$indicator  %in% c("Arthropod species")){
+      m = m %>% 
+        # add gbif layer
+        addCircleMarkers(lat = gbif_Arthropod$lat,
+                         lng = gbif_Arthropod$long,
+                         radius = 3,
+                         fillColor = "green",
+                         color  = "black",
+                         stroke = TRUE,
+                         weight = 0.8,
+                         fillOpacity = 0.6,
+                         popup = gbif_Arthropod$species,
+                         group ="Arthropod species") %>% 
+        # add cluster markers
+        addMarkers(lat = gbif_Arthropod$lat,
+                   lng = gbif_Arthropod$long, 
+                   clusterOptions = markerClusterOptions(),
+                   group = "Arthropod species clusters") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Arthropod species",
+                            "Arthropod species clusters"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Arthropod species",
+                    "Arthropod species clusters")) 
+    }
+    
+    # GRE-1: Recreational space per capita ----
     if(input$indicator %in% c("Recreational space per capita")){
       m = m %>% 
         # plot layer: OSM ----
@@ -708,6 +1028,334 @@ server <- function(input, output, session) {
                     "Population density (persons per hectare, WorldPop)")) 
     }
     
+    # GRE-2: Urban open space for public use----
+    if(input$indicator %in% c("Urban open space for public use")){
+      m = m %>% 
+        # plot layer: OSM ----
+      addPolygons(data = osm_open_space,
+                  group = "Open spaces for public use (OpenStreetMap)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        #   # plot layer: ESA world cover ----
+      # addRasterImage(city_esa_worldcover,
+      #                colors = pal_worldcover,
+      #                opacity = 1,
+      #                maxBytes = 100 * 1024 * 1024,
+      #                project=FALSE,
+      #                group = "Land cover classes (ESA World Cover)") %>%
+      #   addLegend(colors = worldcover_col,
+      #             labels = worldcover_labels,
+      #             title = "Land cover classes (ESA World Cover)",
+      #             group = "Land cover classes (ESA World Cover)",
+      #             position = "bottomleft",
+      #             opacity = 1) %>% 
+      # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          # "Land cover classes (ESA World Cover)"
+                          "Open spaces for public use (OpenStreetMap)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Open spaces for public use (OpenStreetMap)")) 
+    }
+    
+    
+    # GRE-3: Recreational space per capita ----
+    if(input$indicator %in% c("Proximity to public open space")){
+      m = m %>% 
+        # plot layer: OSM ----
+      addPolygons(data = osm_open_space,
+                  group = "Open spaces for public use (OpenStreetMap)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # plot layer: POP
+        addRasterImage(city_pop_boundary,
+                       colors = pal_pop ,
+                       opacity = 0.9,
+                       group = "Population density (persons per hectare, WorldPop)",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population density (persons per hectare, WorldPop)") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population density <br> (persons per hectare, WorldPop)",
+                  group = "Population density (persons per hectare, WorldPop)",
+                  position = "bottomleft") %>% 
+        # plot layer: POP openspace
+        addRasterImage(city_pop_openspace_boundary,
+                       colors = pal_pop_openspace ,
+                       opacity = 0.9,
+                       group = "Population with access to open space within 400 meters (persons per hectare)",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population with access to open space within 400 meters (persons per hectare)") %>% 
+        # Legend for population openspace
+        addLegend(pal = pal_pop_openspace ,
+                  values = pop_openspace_values,
+                  opacity = 0.9,
+                  title = "Population with access to open space <br> within 400 meters <br> (persons per hectare)",
+                  group = "Population with access to open space within 400 meters (persons per hectare)",
+                  position = "bottomleft") %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Open spaces for public use (OpenStreetMap)",
+                          "Population density (persons per hectare, WorldPop)",
+                          "Population with access to open space within 400 meters (persons per hectare)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Open spaces for public use (OpenStreetMap)",
+                    "Population density (persons per hectare, WorldPop)",
+                    "Population with access to open space within 400 meters (persons per hectare)")) 
+    }
+    
+    
+    # GRE-4: Proximity to tree cover ----
+    if(input$indicator %in% c("Proximity to tree cover")){
+      m = m %>% 
+        # Raster of tree cover
+        addRasterImage(city_tml_boundary, 
+                       colors = pal_tml,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Tree cover (% of pixel with tree cover)") %>%
+        addLegend(pal = pal_tml,
+                  values = values(city_tml_boundary), #values(city_tml_aggregate),
+                  title = "Tree cover <br> (% of pixel with tree cover)",
+                  group = "Tree cover (% of pixel with tree cover)",
+                  position = "bottomleft") %>%
+        # plot layer: POP
+        addRasterImage(city_pop_boundary,
+                       colors = pal_pop ,
+                       opacity = 0.9,
+                       group = "Population density (persons per hectare, WorldPop)",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population density (persons per hectare, WorldPop)") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population density <br> (persons per hectare, WorldPop)",
+                  group = "Population density (persons per hectare, WorldPop)",
+                  position = "bottomleft") %>% 
+        # plot layer: POP with access to tree cover ----
+      addRasterImage(city_pop_tree_cover,
+                     colors = pal_pop_tree_cover,
+                     opacity = 0.9,
+                     group = "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)",
+                     project=FALSE,
+                     maxBytes = 8 * 1024 * 1024) %>%
+        addLegend(pal = pal_pop_tree_cover ,
+                  values = pop_tree_cover_values,
+                  opacity = 0.9,
+                  title = "Population with access to <br> at least 10% mean tree cover <br> within 400 meters (persons per hectare)",
+                  group = "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)",
+                  position = "bottomleft") %>%
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Tree cover (% of pixel with tree cover)",
+                          "Population density (persons per hectare, WorldPop)",
+                          "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Tree cover (% of pixel with tree cover)",
+                    "Population density (persons per hectare, WorldPop)",
+                    "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)")) 
+    }
+    
+    
+    # LND-1: Permeable areas ----
+    if(input$indicator %in% c("Permeable areas")){
+      m = m %>% 
+        # plot layer:Impervious surfaces ----
+      addRasterImage(city_impervious_boundary,
+                     colors = pal_impervious,
+                     opacity = 0.7,
+                     maxBytes = 20 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Impervious surfaces (Tsinghua GAIA)") %>%
+        addLegend(pal = pal_impervious,
+                  values = impervious_values,
+                  title = "Impervious surfaces (Tsinghua GAIA)",
+                  group = "Impervious surfaces (Tsinghua GAIA)",
+                  position = "bottomleft") %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Impervious surfaces (Tsinghua GAIA)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Impervious surfaces (Tsinghua GAIA)")) 
+    }
+    
+    # LND-2: Tree cover ----
+    if(input$indicator %in% c("Tree cover")){
+      m = m %>% 
+        # Raster of tree cover
+        addRasterImage(city_tml_boundary, 
+                       colors = pal_tml,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Tree cover <br> (% of pixel with tree cover)") %>%
+        addLegend(pal = pal_tml,
+                  values = values(city_tml_boundary), #values(city_tml_aggregate),
+                  title = "Tree cover <br> (% of pixel with tree cover)",
+                  group = "Tree cover <br> (% of pixel with tree cover)",
+                  position = "bottomleft") %>%
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Tree cover <br> (% of pixel with tree cover)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Tree cover <br> (% of pixel with tree cover)")) 
+    }
+    
+    # LND-6: Protected areas ----
+    if(input$indicator %in% c("Protected areas")){
+      m = m %>% 
+        # plot layer: OSM ----
+      addPolygons(data = wdpa,
+                  group = "Protected areas (WDPA)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Protected areas (WDPA)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Protected areas (WDPA)")) 
+    }
+    
+    # LND-7: Protection of Key Biodiversity Areas ----
+    if(input$indicator %in% c("Protection of Key Biodiversity Areas")){
+      m = m %>% 
+        # plot layer: WDPA ----
+      addPolygons(data = wdpa,
+                  group = "Protected areas (WDPA)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # plot layer: KBA ----
+      addPolygons(data = kba,
+                  group = "Key biodiversity areas <br> (KBA Partnership)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "yellow",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Protected areas (WDPA)",
+                          "Key biodiversity areas <br> (KBA Partnership)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Protected areas (WDPA)",
+                    "Key biodiversity areas <br> (KBA Partnership)")) 
+    }
+    
+    
+    # LND-8: Built-up Key Biodiversity Areas ----
+    if(input$indicator %in% c("Built-up Key Biodiversity Areas")){
+      m = m %>% 
+        # plot layer: KBA ----
+      addPolygons(data = kba,
+                  group = "Key biodiversity areas <br> (KBA Partnership)",
+                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                  smoothFactor = 0.5, fill = TRUE, fillColor = "yellow",fillOpacity = 0.5,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    dashArray = "",
+                    fillOpacity = 0.3,
+                    bringToFront = TRUE)) %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Key biodiversity areas <br> (KBA Partnership)"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Key biodiversity areas <br> (KBA Partnership)")) 
+    }
+    
+    # GHG-2: Climate change impact of trees ----
+    if(input$indicator == "Climate change impact of trees"){
+      m = m %>%
+        # plot layer: carbon flux
+        addRasterImage(city_carbonflux_boundary,
+                       colors = pal_carbonflux ,
+                       opacity = 0.9,
+                       group = "Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Carbon flux from trees") %>%
+        # Legend for population
+        addLegend(pal = pal_carbonflux ,
+                  values = carbonflux_values,
+                  opacity = 0.9,
+                  title = "Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)",
+                  group = "Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)",
+                  position = "bottomleft") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>%
+        hideGroup(c("Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)"))
+    }
     
     # center map  
     output$indicator_map <- renderLeaflet({

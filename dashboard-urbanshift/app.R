@@ -59,12 +59,17 @@ cities = unique(boundary_georef$geo_name)
 # read indicator ------------
 
 
-indicators_v4 = read.csv(paste(aws_s3_path,
-                               "indicators/urbanshift_indicators_v4.csv",
+# indicators_v4 = read.csv(paste(aws_s3_path,
+#                                "indicators/urbanshift_indicators_v4.csv",
+#                                sep = ""),
+#                          encoding="UTF-8")
+
+indicators_v5 = read.csv(paste(aws_s3_path,
+                               "indicators/urbanshift_indicators_v5.csv",
                                sep = ""),
                          encoding="UTF-8")
 
-indicators = indicators_v4 %>%
+indicators = indicators_v5 %>%
   mutate(BIO.1 = 100 * BIO.1) %>% 
   mutate(BIO.2 = 100 * BIO.2) %>% 
   mutate(BIO.3 = na_if(BIO.3, -9999)) %>% 
@@ -201,7 +206,8 @@ ui = tagList(
                                selectInput(inputId = "city",
                                            label = "Select your city",
                                            choices = cities,
-                                           selected = "CRI-San_Jose",
+                                           # selected = "CRI-San_Jose",
+                                           selected = "BRA-Belem",
                                            width = '100%'),
                                
                                # select theme ----
@@ -422,8 +428,9 @@ server <- function(input, output, session) {
     
     # layers: esa world cover
     if(input$indicator %in% c("Natural Areas",
-                              "Connectivity of ecological networks -dev",
-                              "Biodiversity in built-up areas (birds) -dev")){
+                              "Connectivity of ecological networks",
+                              "Biodiversity in built-up areas (birds)",
+                              "Built-up Key Biodiversity Areas")){
       
       # ESA land cover
       
@@ -432,7 +439,7 @@ server <- function(input, output, session) {
                                        geo_name,
                                        "-",
                                        aoi_boundary_name,
-                                       "-ESA-world_cover-2000-50m.tif",
+                                       "-ESA-world_cover-2020-100m.tif",
                                        sep = "")
       
       
@@ -484,6 +491,133 @@ server <- function(input, output, session) {
       
       city_worldcover_natural_areas = mask(x = city_esa_worldcover,
                                            mask = city_worldcover_natural_areas_mask)
+      
+    }
+    
+    # layers: GLAD land cover
+    if(input$indicator %in% c("Proportion of natural areas restored",
+                              "Number of habitat types restored")){
+      
+      
+      # GLAD 2000 ----
+      glad_2000_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
+                                  "data/land_use/GLAD-ARD/v_0/",
+                                  geo_name,
+                                  "-",
+                                  aoi_boundary_name,
+                                  "-GLADlandcover-2000-100m.tif",
+                                  sep = "")
+      
+      # collect raster data
+      city_glad_2000 = raster(glad_2000_data_path)
+      
+      city_glad_2000 = raster::mask(city_glad_2000,
+                                    boundary_aoi)
+      
+      # GLAD 2020 ----
+      
+      glad_2020_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
+                                  "data/land_use/GLAD-ARD/v_0/",
+                                  geo_name,
+                                  "-",
+                                  aoi_boundary_name,
+                                  "-GLADlandcover-2020-100m.tif",
+                                  sep = "")
+      
+      # collect raster data
+      city_glad_2020 = raster(glad_2020_data_path)
+      
+      city_glad_2020 = raster::mask(city_glad_2020,
+                                    boundary_aoi)
+      
+      
+      # color ----
+      # define color palette for WOrld cover
+      bareGround_0 = "#FEFECC"
+      shortVegetation_1 = "#B9B91E"
+      forest_2 = "#347834"
+      tallForest_3 = "#0D570D"
+      wetlandShortVegetation_4 = "#88CAAD"
+      wetlandForest_5 = "#589558"
+      water_6 = "#6BAED6"
+      snowIce_7 = "#ACD1E8"
+      cropland_8 = "#FFF183"
+      built_9 = "#E8765D"
+      
+      glad_col = c(bareGround_0,
+                   shortVegetation_1,
+                   forest_2,
+                   tallForest_3,
+                   wetlandShortVegetation_4,
+                   wetlandForest_5,
+                   water_6,
+                   snowIce_7,
+                   cropland_8,
+                   built_9)
+      glad_labels = c('bare ground',
+                      'short vegetation',
+                      'forest',
+                      'tall forest',
+                      'wetland - short vegetation',
+                      'wetland - forest',
+                      'water',
+                      'snow/ice',
+                      'cropland',
+                      'built-up')
+      
+      
+      # define a color palette
+      pal_glad <- colorFactor(palette = glad_col, 
+                              levels = c("0","1","2","3","4","5",
+                                         "6","7","8","9"),
+                              na.color = "transparent")
+      
+      
+      # GLAD changes ----
+      
+      glad_change_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
+                                    "data/land_use/GLAD-ARD/v_0/",
+                                    geo_name,
+                                    "-",
+                                    aoi_boundary_name,
+                                    "-habitatchange-2000to2020-100m.tif",
+                                    sep = "")
+      
+      # collect raster data
+      city_glad_change = raster(glad_change_data_path)
+      
+      city_glad_change = raster::mask(city_glad_change,
+                                      boundary_aoi)
+      
+      city_glad_change[city_glad_change==0] = NA
+      
+      # define color palette for WOrld cover
+      habitat_loss_10 = "red"
+      habitatr_gain_1 = "purple"
+      
+      
+      glad_change_col = c(habitat_loss_10,
+                          habitatr_gain_1)
+      glad_change_labels = c('Habitat loss',
+                             'Habitat gain')
+      
+      
+      # define a color palette
+      pal_glad_change <- colorFactor(palette = glad_change_col, 
+                                     levels = c("10","1"),
+                                     na.color = "transparent")
+      
+      # GLAD changes loss ----
+      
+      city_glad_change_loss = city_glad_change
+      
+      city_glad_change_loss[!city_glad_change_loss==10] = NA
+      
+      # GLAD changes gain ----
+      
+      city_glad_change_gain = city_glad_change
+      
+      city_glad_change_gain[!city_glad_change_gain==1] = NA
       
     }
     
@@ -562,7 +696,7 @@ server <- function(input, output, session) {
                             geo_name,
                             "-",
                             aoi_boundary_name,
-                            "-TML-tree_cover-2000.tif",
+                            "-TML-tree_cover-2020-50m.tif",
                             sep = "")
       
       # collect raster data
@@ -841,7 +975,7 @@ server <- function(input, output, session) {
     }
     
     # BIO-2: Connectivity of ecological networks ----
-    if(input$indicator  %in% c("Connectivity of ecological networks -dev")){
+    if(input$indicator  %in% c("Connectivity of ecological networks")){
       m = m %>% 
         # Raster of natural areas
         addRasterImage(city_worldcover_natural_areas,
@@ -864,7 +998,7 @@ server <- function(input, output, session) {
     
     
     # BIO-3: Biodiversity in built-up areas (birds) ----
-    if(input$indicator  %in% c("Biodiversity in built-up areas (birds) -dev")){
+    if(input$indicator  %in% c("Biodiversity in built-up areas (birds)")){
       m = m %>% 
         # plot layer: ESA world cover ----
       addRasterImage(city_esa_worldcover,
@@ -1192,16 +1326,22 @@ server <- function(input, output, session) {
       m = m %>% 
         # plot layer:Impervious surfaces ----
       addRasterImage(city_impervious_boundary,
-                     colors = pal_impervious,
-                     opacity = 0.7,
-                     maxBytes = 20 * 1024 * 1024,
-                     project=FALSE,
-                     group = "Impervious surfaces (Tsinghua GAIA)") %>%
-        addLegend(pal = pal_impervious,
-                  values = impervious_values,
-                  title = "Impervious surfaces (Tsinghua GAIA)",
-                  group = "Impervious surfaces (Tsinghua GAIA)",
-                  position = "bottomleft") %>% 
+                    colors = "black",
+                    opacity = 1,
+                    maxBytes = 100 * 1024 * 1024,
+                    project=FALSE,
+                    group = "Impervious surfaces (Tsinghua GAIA)") %>% 
+      # addRasterImage(city_impervious_boundary,
+      #                colors = pal_impervious,
+      #                opacity = 0.7,
+      #                maxBytes = 20 * 1024 * 1024,
+      #                project=FALSE,
+      #                group = "Impervious surfaces (Tsinghua GAIA)") %>%
+      #   addLegend(pal = pal_impervious,
+      #             values = impervious_values,
+      #             title = "Impervious surfaces (Tsinghua GAIA)",
+      #             group = "Impervious surfaces (Tsinghua GAIA)",
+      #             position = "bottomleft") %>% 
         # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
@@ -1237,6 +1377,80 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = TRUE)
       ) %>% 
         hideGroup(c("Tree cover <br> (% of pixel with tree cover)")) 
+    }
+    
+    
+    # LND-4: Habitat areas restored + Habitat types restored ----
+    if(input$indicator %in% c("Proportion of natural areas restored",
+                              "Number of habitat types restored")){
+      m = m %>% 
+        # city_glad_2000
+        addRasterImage(city_glad_2000,
+                       colors = pal_glad,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover classes 2000 <br> (UDM GLAD)") %>% 
+        addLegend(colors = glad_col,
+                  labels = glad_labels,
+                  title = "Land cover classes <br> (UDM GLAD)",
+                  group = "Land cover classes 2000 <br> (UDM GLAD)",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # city_glad_2020
+        addRasterImage(city_glad_2020,
+                       colors = pal_glad,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover classes 2020 <br> (UDM GLAD)") %>% 
+        addLegend(colors = glad_col,
+                  labels = glad_labels,
+                  title = "Land cover classes <br> (UDM GLAD)",
+                  group = "Land cover classes 2020 <br> (UDM GLAD)",
+                  position = "bottomleft",
+                  opacity = 1) %>% 
+        addRasterImage(city_glad_change,
+                       colors = pal_glad_change,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)") %>% 
+        addLegend(colors = glad_change_col,
+                  labels = glad_change_labels,
+                  title = "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
+                  group = "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
+                  position = "bottomleft",
+                  opacity = 1) %>% 
+        addRasterImage(city_glad_change_loss,
+                       colors = "red",
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Habitat loss") %>% 
+        addRasterImage(city_glad_change_gain,
+                       colors = "purple",
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Habitat gain") %>% 
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
+                          "Land cover classes 2000 <br> (UDM GLAD)",
+                          "Land cover classes 2020 <br> (UDM GLAD)",
+                          "Habitat loss",
+                          "Habitat gain"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Land cover classes 2000 <br> (UDM GLAD)",
+                    "Land cover classes 2020 <br> (UDM GLAD)",
+                    "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
+                    "Habitat loss",
+                    "Habitat gain")) 
     }
     
     # LND-6: Protected areas ----
@@ -1317,15 +1531,30 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE)) %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover classes (ESA World Cover)") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "Land cover classes (ESA World Cover)",
+                  group = "Land cover classes (ESA World Cover)",
+                  position = "bottomleft",
+                  opacity = 1) %>%
         # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
-                          "Key biodiversity areas <br> (KBA Partnership)"),
+                          "Key biodiversity areas <br> (KBA Partnership)",
+                          "Land cover classes (ESA World Cover)"),
         options = layersControlOptions(collapsed = TRUE)
       ) %>% 
-        hideGroup(c("Key biodiversity areas <br> (KBA Partnership)")) 
+        hideGroup(c("Key biodiversity areas <br> (KBA Partnership)",
+                    "Land cover classes (ESA World Cover)")) 
     }
     
     # GHG-2: Climate change impact of trees ----

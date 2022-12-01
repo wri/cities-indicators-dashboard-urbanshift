@@ -202,9 +202,12 @@ ui = tagList(
                         
                         column(3,
                                
+                               
+                               
                                ### Select city  ----
                                selectInput(inputId = "city",
-                                           label = "Select your city",
+                                           # label = "Select your city",
+                                           label = tags$span(style="color: #242456;","Select your city"),
                                            choices = cities,
                                            # selected = "CRI-San_Jose",
                                            selected = "BRA-Belem",
@@ -212,7 +215,8 @@ ui = tagList(
                                
                                # select theme ----
                                selectizeInput(inputId = "theme",
-                                              label = "Theme",
+                                              # label = "Theme",
+                                              label = tags$span(style="color: #242456;","Theme"),
                                               choices = indicators_themes,
                                               selected = indicators_themes[1],
                                               multiple = FALSE,
@@ -220,7 +224,8 @@ ui = tagList(
                                
                                # select indicator ----
                                selectizeInput(inputId = "indicator",
-                                              label = "Select indicator",
+                                              # label = "Select indicator",
+                                              label = tags$span(style="color: #242456;","Select indicator"),
                                               choices = indicators_list,
                                               selected = "Natural Areas",
                                               multiple = FALSE,
@@ -228,11 +233,15 @@ ui = tagList(
                                
                                # Main indicators
                                
-                               h4("City wide level: "),
+                               # h4("City wide level: "),
+                               tags$span(h4("City wide level: "),
+                                         style="color: #242456;"),
                                htmlOutput("city_wide_indicator"),
                                
+                               
+                               
                         ),
-                        ### Specify plots ----
+                        ### Specify plots ----  
                         column(8,
                                div(style = "background-color: red; width: 100%; height: 100%;"),
                                tabsetPanel(type = "tabs",
@@ -253,16 +262,21 @@ ui = tagList(
                                                       width = 450,
                                                       top = 50,
                                                       size = 22),
-                                                    actionButton("disconnect", 
-                                                                 "Disconnect the dashboard",
-                                                                 width = '30%',
-                                                                 # class = "btn-warning",
-                                                                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                                    )),
+                                                    # # disconnect dashboard
+                                                    # actionButton("disconnect", 
+                                                    #              "Disconnect the dashboard",
+                                                    #              width = '30%'
+                                                    #              # class = "btn-warning",
+                                                    #              # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                    # ),
+                                                    # download geo data
+                                                    downloadButton(outputId = "download_geo_data",
+                                                                   label = "Download geospatial data")
+                                                    ),
                                            ### Table plot
                                            tabPanel("Table", DT::dataTableOutput("indicator_table"),
                                                     downloadButton(outputId = "downloadData",
-                                                                   label = "Download data")),
+                                                                   label = "Download tabular data")),
                                            ### timeseirs plot
                                            tabPanel("Chart", 
                                                     plotlyOutput("indicator_chart",
@@ -852,7 +866,7 @@ server <- function(input, output, session) {
                                    geo_name,
                                    "-",
                                    aoi_boundary_name,
-                                   "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021.tif",
+                                   "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021-100m.tif",
                                    sep = "")
       
       # collect raster data
@@ -1591,6 +1605,32 @@ server <- function(input, output, session) {
       m
     })
     
+    
+    
+    # download spatial data ----
+    
+    unit_indicators_download = unit_indicators %>% 
+      dplyr::select(geo_id,
+                    geo_level,
+                    geo_name,
+                    geo_parent_name,
+                    selected_indicator_name)
+    
+    output$download_geo_data <- downloadHandler(
+      filename = function() {
+        paste("data-geo-", 
+              geo_name,
+              "-",
+              selected_indicator_label,
+              # Sys.Date(), 
+              ".geojson", sep="")
+      },
+      content = function(file) {
+        st_write(unit_indicators_download, file, driver = "GeoJSON")
+      }
+    )
+    
+    
     #########################################
     ### Main indicators ----
     
@@ -1636,12 +1676,15 @@ server <- function(input, output, session) {
     
     # output plot
     output$city_wide_indicator <- renderText({
-      paste("<center>","<font size=5px; weight=500; color=\"#168A06\"><b>", 
+      paste("<center>","<font size=5px; weight=500; color=\"#2A553E\"><b>", 
             city_wide_indicator_value, 
             city_wide_indicator_value_unit,"<br>",
-            "<font size=2px; weight=500; color=\"#168A06\"><b>",
+            # "<font size=2px; weight=500; color=\"#168A06\"><b>",
+            "<font size=2px; weight=500; color=\"#A0D1B4\"><b>",
             selected_indicator_legend)
     })
+    
+    
     
     #########################################
     ### Table ----
@@ -1739,9 +1782,15 @@ server <- function(input, output, session) {
         paste(input$city,"-", input$indicator,"-", Sys.Date(), ".csv", sep="")
       },
       content = function(file) {
-        write.csv(table_plot, file)
+        write.csv(table_plot,
+                  file,
+                  row.names=FALSE,
+                  fileEncoding = "latin1")
       }
     )
+    
+    
+    
     
     #########################################
     ### Chart ----
@@ -1809,7 +1858,8 @@ server <- function(input, output, session) {
                     type = "bar",
                     orientation = "v",
                     name = names(table_plot)[2],
-                    color = I("green4")) %>% 
+                    # color = I("green4"),
+                    color = I("#2A553E")) %>% 
         layout(yaxis = list(title = selected_indicator_legend),
                xaxis = list(title = 'Cities',categoryorder = "total descending"))
       
@@ -1821,19 +1871,8 @@ server <- function(input, output, session) {
       
     })
     
-    # output$indicator_chart <- renderPlotly({
-    #   fig = plot_ly(x = table_plot$`City name`,
-    #                 y = table_plot[[colnames(table_plot)[2]]],
-    #                 type = "bar",
-    #                 orientation = "v",
-    #                 name = names(table_plot)[2],
-    #                 color = I("green4")) %>% 
-    #     layout(yaxis = list(title = selected_indicator_legend),
-    #            xaxis = list(title = 'Cities',categoryorder = "total descending"))
-    #   
-    #   fig
-    #   
-    # })
+    
+
     
     #########################################
     ### Indicator definition text  ----
@@ -1856,22 +1895,22 @@ server <- function(input, output, session) {
     
     # plot text 
     output$indicator_definition <- renderText({
-      paste("<right>","<font size=3px; weight=100; color=\"#168A06\"><b>",
-            "<font color=\"#168A06\"><b>", " ", "<br>",
-            "<font color=\"#168A06\"><b>","Definition: ",
-            "<font color=\"#454545\"><b>", indicator_def_text,
+      paste("<right>","<font size=3px; weight=100; color=\"#2A553E\"><b>",
+            "<font color=\"#2A553E\"><b>", " ", "<br>",
+            "<font color=\"#2A553E\"><b>","Definition: ",
+            "<font color=\"#242456\"><b>", indicator_def_text,
             "<br/>",
-            "<font color=\"#168A06\"><b>", " ", "<br>",
-            "<font color=\"#168A06\"><b>","Data sources: ",
-            "<font color=\"#454545\"><b>", indicator_data_sources,
+            "<font color=\"#2A553E6\"><b>", " ", "<br>",
+            "<font color=\"#2A553E\"><b>","Data sources: ",
+            "<font color=\"#242456\"><b>", indicator_data_sources,
             "<br/>",
-            "<font color=\"#168A06\"><b>", " ", "<br>",
-            "<font color=\"#168A06\"><b>","Importance: ",
-            "<font color=\"#454545\"><b>", indicator_importance,
+            "<font color=\"#2A553E\"><b>", " ", "<br>",
+            "<font color=\"#2A553E\"><b>","Importance: ",
+            "<font color=\"#242456\"><b>", indicator_importance,
             "<br/>",
-            "<font color=\"#168A06\"><b>", " ", "<br>",
-            "<font color=\"#168A06\"><b>","Methods: ",
-            "<font weight=50; color=\"#454545\"><b>", indicator_methods
+            "<font color=\"#2A553E\"><b>", " ", "<br>",
+            "<font color=\"#2A553E\"><b>","Methods: ",
+            "<font weight=50; color=\"#242456\"><b>", indicator_methods
       )
     })
     

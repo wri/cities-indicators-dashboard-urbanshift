@@ -1436,18 +1436,18 @@ server <- function(input, output, session) {
                   group = "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
                   position = "bottomleft",
                   opacity = 1) %>% 
-        addRasterImage(city_glad_change_loss,
-                       colors = "red",
-                       opacity = 1,
-                       maxBytes = 100 * 1024 * 1024,
-                       project=FALSE,
-                       group = "Habitat loss") %>% 
-        addRasterImage(city_glad_change_gain,
-                       colors = "purple",
-                       opacity = 1,
-                       maxBytes = 100 * 1024 * 1024,
-                       project=FALSE,
-                       group = "Habitat gain") %>% 
+        # addRasterImage(city_glad_change_loss,
+        #                colors = "red",
+        #                opacity = 1,
+        #                maxBytes = 100 * 1024 * 1024,
+        #                project=FALSE,
+        #                group = "Habitat loss") %>% 
+        # addRasterImage(city_glad_change_gain,
+        #                colors = "purple",
+        #                opacity = 1,
+        #                maxBytes = 100 * 1024 * 1024,
+        #                project=FALSE,
+        #                group = "Habitat gain") %>% 
         # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
@@ -1455,16 +1455,12 @@ server <- function(input, output, session) {
                           selected_indicator_legend,
                           "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
                           "Land cover classes 2000 <br> (UDM GLAD)",
-                          "Land cover classes 2020 <br> (UDM GLAD)",
-                          "Habitat loss",
-                          "Habitat gain"),
+                          "Land cover classes 2020 <br> (UDM GLAD)"),
         options = layersControlOptions(collapsed = TRUE)
       ) %>% 
         hideGroup(c("Land cover classes 2000 <br> (UDM GLAD)",
                     "Land cover classes 2020 <br> (UDM GLAD)",
-                    "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
-                    "Habitat loss",
-                    "Habitat gain")) 
+                    "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)")) 
     }
     
     # LND-6: Protected areas ----

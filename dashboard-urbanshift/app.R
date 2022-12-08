@@ -787,7 +787,18 @@ server <- function(input, output, session) {
     
     # layers: Protected areas ----
     if(input$indicator %in% c("Protected areas",
-                              "Protection of Key Biodiversity Areas")){
+                              "Protection of Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
+                                                                                           "ARG-Mar_del_Plata",
+                                                                                           "ARG-Ushuaia",
+                                                                                           "BRA-Teresina",
+                                                                                           "CHN-Ningbo",
+                                                                                           "IDN-Balikpapan",
+                                                                                           "IDN-Semarang",
+                                                                                           "IND-Chennai",
+                                                                                           "IND-Pune",
+                                                                                           "IND-Surat",
+                                                                                           "MAR-Marrakech",
+                                                                                           "RWA-Kigali")){
       wdpa = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/WDPA/v_1/",
                            geo_name,
                            "-",
@@ -800,7 +811,8 @@ server <- function(input, output, session) {
     
     # layers: Key Biodiversity Areas ----
     if(input$indicator %in% c("Protection of Key Biodiversity Areas",
-                              "Built-up Key Biodiversity Areas")){
+                              "Built-up Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
+                                                                                      "BRA-Teresina")){
       kba = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/KBA/v_1/",
                           geo_name,
                           "-",
@@ -1464,9 +1476,20 @@ server <- function(input, output, session) {
     }
     
     # LND-6: Protected areas ----
-    if(input$indicator %in% c("Protected areas")){
+    if(input$indicator %in% c("Protected areas") & !input$city %in% c("BRA-Belem",
+                                                                      "ARG-Mar_del_Plata",
+                                                                      "ARG-Ushuaia",
+                                                                      "BRA-Teresina",
+                                                                      "CHN-Ningbo",
+                                                                      "IDN-Balikpapan",
+                                                                      "IDN-Semarang",
+                                                                      "IND-Chennai",
+                                                                      "IND-Pune",
+                                                                      "IND-Surat",
+                                                                      "MAR-Marrakech",
+                                                                      "RWA-Kigali")){
       m = m %>% 
-        # plot layer: OSM ----
+        # plot layer: OSM 
       addPolygons(data = wdpa,
                   group = "Protected areas (WDPA)",
                   stroke = TRUE, color = "black", weight = 1,dashArray = "1",
@@ -1477,7 +1500,7 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE)) %>% 
-        # Layers control ----
+        # Layers control 
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
@@ -1489,9 +1512,20 @@ server <- function(input, output, session) {
     }
     
     # LND-7: Protection of Key Biodiversity Areas ----
-    if(input$indicator %in% c("Protection of Key Biodiversity Areas")){
+    if(input$indicator %in% c("Protection of Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
+                                                                                           "ARG-Mar_del_Plata",
+                                                                                           "ARG-Ushuaia",
+                                                                                           "BRA-Teresina",
+                                                                                           "CHN-Ningbo",
+                                                                                           "IDN-Balikpapan",
+                                                                                           "IDN-Semarang",
+                                                                                           "IND-Chennai",
+                                                                                           "IND-Pune",
+                                                                                           "IND-Surat",
+                                                                                           "MAR-Marrakech",
+                                                                                           "RWA-Kigali")){
       m = m %>% 
-        # plot layer: WDPA ----
+        # plot layer: WDPA 
       addPolygons(data = wdpa,
                   group = "Protected areas (WDPA)",
                   stroke = TRUE, color = "black", weight = 1,dashArray = "1",
@@ -1502,7 +1536,7 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE)) %>% 
-        # plot layer: KBA ----
+        # plot layer: KBA 
       addPolygons(data = kba,
                   group = "Key biodiversity areas <br> (KBA Partnership)",
                   stroke = TRUE, color = "black", weight = 1,dashArray = "1",
@@ -1513,7 +1547,7 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE)) %>% 
-        # Layers control ----
+        # Layers control 
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
@@ -1528,7 +1562,8 @@ server <- function(input, output, session) {
     
     
     # LND-8: Built-up Key Biodiversity Areas ----
-    if(input$indicator %in% c("Built-up Key Biodiversity Areas")){
+    if(input$indicator %in% c("Built-up Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
+                                                                                      "BRA-Teresina")){
       m = m %>% 
         # plot layer: KBA ----
       addPolygons(data = kba,

@@ -78,6 +78,8 @@ indicators = indicators_v5 %>%
   mutate(BIO.5 = na_if(BIO.5, -9999)) %>% 
   mutate(BIO.6 = na_if(BIO.6, -9999)) %>% 
   mutate(LND.1 = 100 * LND.1) %>% 
+  mutate(LND.1 = na_if(LND.1, -9999)) %>% 
+  mutate(LND.1 = na_if(LND.1, -999900)) %>% 
   mutate(LND.2 = 100 * LND.2) %>% 
   mutate(LND.4 = 100 * LND.4) %>% 
   mutate(LND.5 = 100 * LND.5) %>% 
@@ -180,6 +182,33 @@ pal.indicator.fun = function(selected_indicator_values){
 }
 
 
+# cities comparison ----
+
+cities_comparison_list = c("ARG-Mendoza_ADM-3-union_1",
+                           "ARG-Mar_del_Plata_ADM-3_1",
+                           "ARG-Ushuaia_ADM-4_1",
+                           "ARG-Salta_ADM-2-union_1",
+                           "ARG-Buenos_Aires_ADM-2-union_1",
+                           "BRA-Teresina_ADM-4-union_1",
+                           "BRA-Florianopolis_ADM-4-union_1",
+                           "BRA-Belem_ADM-4-union_1",
+                           "CRI-San_Jose_ADM-2-union_1",
+                           "RWA-Kigali_ADM-4-union_1",
+                           "SLE-Freetown_city_ADM-4-union_1",
+                           "MAR-Marrakech_ADM-2_1",
+                           "IND-Chennai_ADM-4-union_1",
+                           "IND-Pune_ADM-4-union_1",
+                           "IND-Surat_ADM-4-union_1",
+                           "CHN-Chengdu_ADM-3-union_1",
+                           "CHN-Chongqing_ADM-1_1",
+                           "CHN-Ningbo_ADM-3-union_1",
+                           "IDN-Jakarta_ADM-4-union_1",
+                           "IDN-Bitung_ADM-2_1",
+                           "IDN-Semarang_ADM-1_1",
+                           "IDN-Balikpapan_ADM-4-union_1",
+                           "IDN-Palembang_ADM-2-union_1")
+
+indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list, ]
 
 ############### App
 
@@ -281,6 +310,10 @@ ui = tagList(
                                            tabPanel("Chart", 
                                                     plotlyOutput("indicator_chart",
                                                                  height = 500)),
+                                           
+                                           ## Cities comparison
+                                           tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
+                                                                              height = 500)),
                                            ### Data description
                                            tabPanel("Definitions", htmlOutput("indicator_definition", 
                                                                               height = 500))
@@ -1902,6 +1935,61 @@ server <- function(input, output, session) {
       
     })
     
+    
+    ########################################
+    
+    # cities comparison ----
+    
+    indicators_comparison = indicators_comparison %>% 
+      as.data.frame() %>%
+      dplyr::select(geo_name,selected_indicator_name) %>% 
+      drop_na(selected_indicator_name, geo_name) %>% 
+      mutate_if(is.numeric, round, 2) %>% 
+      arrange(desc(selected_indicator_name)) 
+    
+    # change names
+    names(indicators_comparison) = c("City name",selected_indicator_label)
+    
+    city_num = which(indicators_comparison$`City name` == geo_name)
+    city_color = rep("#A0D1B4",nrow(indicators_comparison)) #, "grey"
+    city_color[city_num] = "#2A553E" #"green"
+    
+    
+    
+    cities_indicator_avg = round(mean(indicators_comparison[[colnames(indicators_comparison)[2]]]),2)
+    
+    
+    output$cities_comparison_plot <- renderPlotly({
+      fig = plot_ly(x = indicators_comparison$`City name`,
+                    y = indicators_comparison[[colnames(indicators_comparison)[2]]],
+                    type = "bar",
+                    orientation = "v",
+                    name = names(indicators_comparison)[2],
+                    marker = list(color = city_color)) %>% 
+        layout(yaxis = list(title = selected_indicator_legend), 
+               xaxis = list(title = 'Cities',categoryorder = "total descending"),
+               annotations = list(
+                 x = 10,
+                 y = cities_indicator_avg+cities_indicator_avg*0.1, 
+                 text = paste("Cities' averrage: ", 
+                              cities_indicator_avg, 
+                              city_wide_indicator_value_unit, 
+                              sep = ""),
+                 showarrow = FALSE,
+                 xanchor = "right"
+               ))
+      
+      add_trace(fig,
+                y = cities_indicator_avg, 
+                type='scatter',
+                mode = 'lines',
+                name = 'Average', 
+                showlegend = F,
+                line = list(color = 'black', 
+                            dash = 'dot',
+                            width = 1)) 
+      
+    })
     
 
     

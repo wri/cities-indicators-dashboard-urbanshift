@@ -77,9 +77,10 @@ indicators = indicators_v5 %>%
   mutate(BIO.4 = na_if(BIO.4, -9999)) %>% 
   mutate(BIO.5 = na_if(BIO.5, -9999)) %>% 
   mutate(BIO.6 = na_if(BIO.6, -9999)) %>% 
-  mutate(LND.1 = 100 * LND.1) %>% 
   mutate(LND.1 = na_if(LND.1, -9999)) %>% 
-  mutate(LND.1 = na_if(LND.1, -999900)) %>% 
+  mutate(LND.1 = 100 * LND.1) %>% 
+  # mutate(LND.1 = na_if(LND.1, -9999)) %>% 
+  # mutate(LND.1 = na_if(LND.1, -999900)) %>% 
   mutate(LND.2 = 100 * LND.2) %>% 
   mutate(LND.4 = 100 * LND.4) %>% 
   mutate(LND.5 = 100 * LND.5) %>% 
@@ -1873,7 +1874,8 @@ server <- function(input, output, session) {
                           type = 'bar',
                           name = ~gas,
                           color = ~gas,
-                          legendgroup= ~year) %>% 
+                          legendgroup= ~year,
+                          showlegend = FALSE) %>% 
         layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
                xaxis = list(title = 'sectors',categoryorder = "total descending"),
                barmode = 'stack')
@@ -1886,7 +1888,7 @@ server <- function(input, output, session) {
                           name = ~gas,
                           color = ~gas,
                           legendgroup= ~year,
-                          showlegend = FALSE) %>% 
+                          showlegend = TRUE) %>% 
         layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
                xaxis = list(title = 'sectors',categoryorder = "total descending"),
                barmode = 'stack')

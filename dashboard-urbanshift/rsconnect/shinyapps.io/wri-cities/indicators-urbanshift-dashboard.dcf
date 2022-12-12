@@ -5,9 +5,9 @@ account: wri-cities
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 7747429
-bundleId: 6627281
+bundleId: 6627612
 url: https://wri-cities.shinyapps.io/indicators-urbanshift-dashboard/
-when: 1670855184.82402
-lastSyncTime: 1670855184.82403
+when: 1670859997.56191
+lastSyncTime: 1670859997.56192
 asMultiple: FALSE
 asStatic: FALSE

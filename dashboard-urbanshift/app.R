@@ -64,8 +64,13 @@ cities = unique(boundary_georef$geo_name)
 #                                sep = ""),
 #                          encoding="UTF-8")
 
+# indicators_v5 = read.csv(paste(aws_s3_path,
+#                                "indicators/urbanshift_indicators_v5.csv",
+#                                sep = ""),
+#                          encoding="UTF-8")
+
 indicators_v5 = read.csv(paste(aws_s3_path,
-                               "indicators/urbanshift_indicators_v5.csv",
+                               "indicators/urbanshift_indicators_v6.csv",
                                sep = ""),
                          encoding="UTF-8")
 
@@ -1739,7 +1744,7 @@ server <- function(input, output, session) {
     
     
     
-    # output plot
+    # City-wide inidcator
     output$city_wide_indicator <- renderText({
       paste("<center>","<font size=5px; weight=500; color=\"#2A553E\"><b>", 
             city_wide_indicator_value, 
@@ -1814,7 +1819,8 @@ server <- function(input, output, session) {
         arrange(desc(selected_indicator_name)) 
       
       selected_indicator_legend_table = str_remove(selected_indicator_legend, "<br> ")
-      names(table_plot) = c("City name",selected_indicator_legend_table)
+      # names(table_plot) = c("City name",selected_indicator_legend_table)
+      names(table_plot) = c("Name",selected_indicator_legend_table)
     }
     
     
@@ -1919,7 +1925,8 @@ server <- function(input, output, session) {
         layout(legend=list(title=list(text='<b> Gases </b>')),
                annotations = annotations)
     } else {
-      fig = plot_ly(x = table_plot$`City name`,
+      fig = plot_ly(x = table_plot$`Name`,
+                    # x = table_plot$`City name`,
                     y = table_plot[[colnames(table_plot)[2]]],
                     type = "bar",
                     orientation = "v",
@@ -1927,7 +1934,7 @@ server <- function(input, output, session) {
                     # color = I("green4"),
                     color = I("#2A553E")) %>% 
         layout(yaxis = list(title = selected_indicator_legend),
-               xaxis = list(title = 'Cities',categoryorder = "total descending"))
+               xaxis = list(categoryorder = "total descending"))
       
       fig
     }
@@ -1973,7 +1980,7 @@ server <- function(input, output, session) {
                annotations = list(
                  x = 10,
                  y = cities_indicator_avg+cities_indicator_avg*0.1, 
-                 text = paste("Cities' averrage: ", 
+                 text = paste("Cities' average: ", 
                               cities_indicator_avg, 
                               city_wide_indicator_value_unit, 
                               sep = ""),

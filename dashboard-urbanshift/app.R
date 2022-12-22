@@ -76,7 +76,7 @@ indicators_v5 = read.csv(paste(aws_s3_path,
 
 indicators = indicators_v5 %>%
   mutate(BIO.1 = 100 * BIO.1) %>% 
-  mutate(BIO.2 = 100 * BIO.2) %>% 
+  mutate(BIO.2 = 1 * BIO.2) %>% 
   mutate(BIO.3 = na_if(BIO.3, -9999)) %>% 
   mutate(BIO.3 = 100 * BIO.3) %>% 
   mutate(BIO.4 = na_if(BIO.4, -9999)) %>% 
@@ -312,14 +312,16 @@ ui = tagList(
                                            tabPanel("Table", DT::dataTableOutput("indicator_table"),
                                                     downloadButton(outputId = "downloadData",
                                                                    label = "Download tabular data")),
-                                           ### timeseirs plot
+                                           ### barchart 
                                            tabPanel("Chart", 
                                                     plotlyOutput("indicator_chart",
                                                                  height = 500)),
                                            
                                            ## Cities comparison
                                            tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
-                                                                              height = 500)),
+                                                                              height = 500),
+                                                    downloadButton(outputId = "downloadDataBenchmark",
+                                                                   label = "Download benchmark data")),
                                            ### Data description
                                            tabPanel("Definitions", htmlOutput("indicator_definition", 
                                                                               height = 500))
@@ -420,7 +422,7 @@ server <- function(input, output, session) {
       filter(indicator_label %in% selected_indicator_label) %>% 
       pull(indicator_name)
     
-    print(selected_indicator_name)
+    # print(selected_indicator_name)
     
     # get indicator legend  -----
     selected_indicator_legend = indicators_definitions %>% 
@@ -433,7 +435,7 @@ server <- function(input, output, session) {
       as.data.frame() %>% 
       pull(selected_indicator_name)
     
-    print(selected_indicator_values)
+    # print(selected_indicator_values)
     
     # indicator color values ----
     
@@ -1713,7 +1715,7 @@ server <- function(input, output, session) {
     # unit
     
     if(input$indicator %in% c("Natural Areas",
-                              "Connectivity of ecological networks",
+                              # "Connectivity of ecological networks",
                               "Biodiversity in built-up areas (birds)",
                               "Permeable areas",
                               "Tree cover",
@@ -1729,8 +1731,9 @@ server <- function(input, output, session) {
       city_wide_indicator_value_unit = "%"
     } else if(input$indicator %in% c("Vascular plant species",
                                      "Bird species",
-                                     "Arthropod species")){
-      city_wide_indicator_value_unit = "#"
+                                     "Arthropod species",
+                                     "Connectivity of ecological networks")){
+      city_wide_indicator_value_unit = ""
       
     } else if(input$indicator %in% c("Recreational space per capita")){
       city_wide_indicator_value_unit = "hectares"
@@ -1999,6 +2002,19 @@ server <- function(input, output, session) {
                             width = 1)) 
       
     })
+    
+    # benchmark data to download
+    output$downloadDataBenchmark <- downloadHandler(
+      filename = function() {
+        paste("Benchmark-", input$indicator,"-", Sys.Date(), ".csv", sep="")
+      },
+      content = function(file) {
+        write.csv(indicators_comparison,
+                  file,
+                  row.names=FALSE,
+                  fileEncoding = "latin1")
+      }
+    )
     
 
     

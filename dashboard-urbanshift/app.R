@@ -220,18 +220,26 @@ indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list
 
 ui = tagList(
   useShinyjs(),
+#   tags$script(type="text/javascript"),
 #   tags$script(src="https://cdn.weglot.com/weglot.min.js"),
 #   tags$script(src="Weglot.initialize({
 #         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
 #     })
 # "),
-#   tags$head('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
-#   tags$head(src="Weglot.initialize({
+#   tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
+#   tags$script(src="Weglot.initialize({
 #         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
 #     })
 # "),
+# tags$head(
+#   tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
+#   tags$script(src="Weglot.initialize({
+#         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
+#     })
+# ")),
 tags$head(
-  tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
+  # tags$script(type="text/javascript"),
+  tags$script(src="https://cdn.weglot.com/weglot.min.js"),
   tags$script(src="Weglot.initialize({
         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
     })

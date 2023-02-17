@@ -225,11 +225,12 @@ ui = tagList(
 #         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
 #     })
 # "),
-  tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
-  tags$script(src="Weglot.initialize({
-        api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
-    })
-"),
+#   tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
+#   tags$script(src="Weglot.initialize({
+#         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
+#     })
+# "),
+tags$script(src = "weglot.js"),
   navbarPage(title = div("Indicators Dashboard",
                          img(src = "logo.png",
                              height = "30px",

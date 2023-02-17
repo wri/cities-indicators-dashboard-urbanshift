@@ -237,9 +237,10 @@ ui = tagList(
 #         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
 #     })
 # ")),
+
 tags$head(
   tags$script(src="https://cdn.weglot.com/weglot.min.js"),
-  tags$script(src="Weglot.initialize({api_key:'wg_af620c4f25dacaa6bc9fe25247f6be664'})")),
+  tags$script(src=enc2utf8("Weglot.initialize({api_key:'wg_af620c4f25dacaa6bc9fe25247f6be664'})"))),
 # tags$head(tags$script(src = "weglot_src.js")),
 # tags$head(tags$script(src = "weglot_init.js")),
   navbarPage(title = div("Indicators Dashboard",

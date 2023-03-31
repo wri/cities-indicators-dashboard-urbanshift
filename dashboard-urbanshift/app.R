@@ -47,27 +47,17 @@ boundary_georef = read.csv(paste(aws_s3_path,
                                  sep = ""),
                            fileEncoding="UTF-8-BOM")
 
-boundary_georef = boundary_georef %>%
-  # recode empty strings "" by NAs
-  na_if("") %>%
-  # remove NAs
-  drop_na(units_boundary_name)
+# boundary_georef = boundary_georef %>%
+#   # recode empty strings "" by NAs
+#   na_if("") %>%
+#   # remove NAs
+#   drop_na(units_boundary_name)
 
 cities = unique(boundary_georef$geo_name)
 
 
 # read indicator ------------
 
-
-# indicators_v4 = read.csv(paste(aws_s3_path,
-#                                "indicators/urbanshift_indicators_v4.csv",
-#                                sep = ""),
-#                          encoding="UTF-8")
-
-# indicators_v5 = read.csv(paste(aws_s3_path,
-#                                "indicators/urbanshift_indicators_v5.csv",
-#                                sep = ""),
-#                          encoding="UTF-8")
 
 indicators_v5 = read.csv(paste(aws_s3_path,
                                "indicators/urbanshift_indicators_v6.csv",
@@ -241,9 +231,7 @@ ui = tagList(
 tags$head(
   tags$script(src="https://cdn.weglot.com/weglot.min.js"),
   tags$script(src=enc2utf8("Weglot.initialize({api_key:'wg_af620c4f25dacaa6bc9fe25247f6be664'})"))),
-# tags$head(tags$script(src = "weglot_src.js")),
-# tags$head(tags$script(src = "weglot_init.js")),
-  navbarPage(title = div("Indicators Dashboard",
+  navbarPage(title = div("Indicators Dashboard dev",
                          img(src = "logo.png",
                              height = "30px",
                              style = "top: -3px;
@@ -1266,7 +1254,7 @@ server <- function(input, output, session) {
                     dashArray = "",
                     fillOpacity = 0.3,
                     bringToFront = TRUE)) %>% 
-        #   # plot layer: ESA world cover ----
+      #   # plot layer: ESA world cover ----
       # addRasterImage(city_esa_worldcover,
       #                colors = pal_worldcover,
       #                opacity = 1,
@@ -1278,7 +1266,7 @@ server <- function(input, output, session) {
       #             title = "Land cover classes (ESA World Cover)",
       #             group = "Land cover classes (ESA World Cover)",
       #             position = "bottomleft",
-      #             opacity = 1) %>% 
+      #             opacity = 1) %>%
       # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),

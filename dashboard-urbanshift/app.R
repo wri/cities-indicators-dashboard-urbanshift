@@ -20,17 +20,64 @@ library(RColorBrewer)
 library(shinydisconnect)
 library(shinyjs)
 
+
+#library(shinycssloaders)
+
+# library(leaflet.multiopacity)
+
+#library(shinyscreenshot)
+# library(webshot)
+# library(mapview)
+
+# define project
+
+selected_project = "urbanshift"
+# selected_project = "cities4forests"
+
+if(selected_project == "urbanshift"){
+  default_city = "BRA-Belem"
+  logo_file = "logo_urbanshift.png"
+  logo_height = "30px"
+  default_theme = "Biodiversity"
+  default_indicator = "Natural Areas"
+} else if(selected_project == "cities4forests"){
+  default_city = "COG-Brazzaville"
+  logo_file = "logo_c4f.png"
+  logo_height = "15px"
+  default_theme = "Greenspace access"
+  default_indicator = "Open space for public use"
+}
+
+
+
+
 # define aws s3 path
 
-aws_s3_path = "https://cities-urbanshift.s3.eu-west-3.amazonaws.com/"
+aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
 
-############### Load data
+
+############### Load data: indicator definition
+
+# read indicator definition all projects------------
+
+# indicators_definitions = read.csv(paste(aws_s3_path,
+#                                         "indicators/definitions.csv",
+#                                         sep = ""))
 
 # read indicator definition ------------
 
 indicators_definitions = read.csv(paste(aws_s3_path,
-                                        "indicators/indicators_definition_v4.csv",
+                                        "indicators/",
+                                        selected_project,
+                                        "/definitions.csv",
                                         sep = ""))
+
+# remove wrong labels still in the table
+indicators_definitions = indicators_definitions %>% 
+  filter(!indicator_label %in% c("High pollution days (carbon monoxide)",
+                                 "Air pollution (by pollutant)",
+                                 "Air pollution (by sector)"))
+
 
 # get list of themes
 indicators_themes = unique(indicators_definitions$theme)
@@ -39,121 +86,41 @@ indicators_themes = unique(indicators_definitions$theme)
 
 indicators_list = unique(indicators_definitions$indicator_label)
 
+############### Load data: boundary georef
 
-# read boundaries georef -----
+# # all projects
+# boundary_georef = read.csv(paste(aws_s3_path,
+#                                  "data/boundaries/boundary_georef.csv",
+#                                  sep = ""),
+#                            fileEncoding="UTF-8-BOM")
 
+# by project
 boundary_georef = read.csv(paste(aws_s3_path,
-                                 "data/boundaries/v_0/boundary_georef.csv",
+                                 "data/",
+                                 selected_project,
+                                 "/boundaries/boundary_georef.csv",
                                  sep = ""),
                            fileEncoding="UTF-8-BOM")
 
-# boundary_georef = boundary_georef %>%
-#   # recode empty strings "" by NAs
-#   na_if("") %>%
-#   # remove NAs
-#   drop_na(units_boundary_name)
 
 cities = unique(boundary_georef$geo_name)
 
+############### Load data: indicators
 
 # read indicator ------------
 
 
-indicators_v5 = read.csv(paste(aws_s3_path,
-                               "indicators/urbanshift_indicators_v6.csv",
-                               sep = ""),
-                         encoding="UTF-8")
+indicators = read.csv(paste(aws_s3_path,
+                            "indicators/",
+                            selected_project,
+                            "/indicators.csv",
+                            sep = ""))
 
-indicators = indicators_v5 %>%
-  mutate(BIO.1 = 100 * BIO.1) %>% 
-  mutate(BIO.2 = 1 * BIO.2) %>% 
-  mutate(BIO.3 = na_if(BIO.3, -9999)) %>% 
-  mutate(BIO.3 = 100 * BIO.3) %>% 
-  mutate(BIO.4 = na_if(BIO.4, -9999)) %>% 
-  mutate(BIO.5 = na_if(BIO.5, -9999)) %>% 
-  mutate(BIO.6 = na_if(BIO.6, -9999)) %>% 
-  mutate(LND.1 = na_if(LND.1, -9999)) %>% 
-  mutate(LND.1 = 100 * LND.1) %>% 
-  # mutate(LND.1 = na_if(LND.1, -9999)) %>% 
-  # mutate(LND.1 = na_if(LND.1, -999900)) %>% 
-  mutate(LND.2 = 100 * LND.2) %>% 
-  mutate(LND.4 = 100 * LND.4) %>% 
-  mutate(LND.5 = 100 * LND.5) %>% 
-  mutate(LND.6 = 100 * LND.6) %>% 
-  mutate(LND.7 = na_if(LND.7, -9999)) %>%
-  mutate(LND.7 = 100 * LND.7) %>% 
-  mutate(LND.8 = na_if(LND.8, -9999)) %>%
-  mutate(LND.8 = 100 * LND.8) %>% 
-  mutate(GRE.2 = 100 * GRE.2) %>% 
-  mutate(GRE.3 = 100 * GRE.3) %>% 
-  mutate(GRE.4 = 100 * GRE.4)
+############### get cities comparison list ----------------
+
+indicators_comparison = indicators[indicators$geo_id %in% boundary_georef$city_id, ]
 
 
-# read indicator GHG-1  ------------
-indicators_GHG_1 = read.csv(paste(aws_s3_path,
-                                  "indicators/urbanshift_GHG-1.csv",
-                                  sep = ""),
-                            encoding="UTF-8")
-
-indicators_GHG_1_aoi = indicators_GHG_1 %>% 
-  filter(!X %in% c("ARG-Mar_del_Plata_ADM-2_1",
-                   "ARG-Ushuaia_ADM-3_1",
-                   "BRA-Teresina_ADM-2-union_1",
-                   "BRA-Florianopolis_ADM-2-union_1",
-                   "BRA-Belem_ADM-2-union_1",
-                   "IND-Chennai_ADM-6-union_1")) %>% 
-  add_column(geo_parent_name = c("ARG-Mendoza",
-                                 "ARG-Mar_del_Plata",
-                                 "ARG-Ushuaia",
-                                 "ARG-Salta",
-                                 "ARG-Buenos_Aires",
-                                 "BRA-Teresina",
-                                 "BRA-Florianopolis",
-                                 "BRA-Belem",
-                                 "CRI-San_Jose",
-                                 "RWA-Kigali",
-                                 "SLE-Freetown_city",
-                                 "SLE-Freetown_region",
-                                 "MAR-Marrakech",
-                                 "IND-Chennai",
-                                 "IND-Pune",
-                                 "IND-Surat",
-                                 "CHN-Chengdu",
-                                 "CHN-Chongqing",
-                                 "CHN-Ningbo",
-                                 "IDN-Jakarta",
-                                 "IDN-Bitung",
-                                 "IDN-Semarang",
-                                 "IDN-Balikpapan",
-                                 "IDN-Palembang")) %>%
-  mutate(GHG.1 = 100 * total_change_co2e) %>% 
-  dplyr::select(geo_parent_name,GHG.1) %>%
-  mutate_if(is.numeric, round, 0)
-
-indicators = indicators %>% 
-  right_join(indicators_GHG_1_aoi,
-             by = "geo_parent_name") 
-
-indicators_GHG_1_unit = indicators_GHG_1 %>% 
-  dplyr::select(1,
-                c(205:268),
-                c(329:418)) %>% 
-  dplyr::select(-c("co_2000_co2e",
-                   "ch4_2000_co2e",
-                   "co2_2000_co2e",
-                   "nox_2000_co2e",
-                   "ch4_2020_co2e",
-                   "co_2020_co2e" ,
-                   "oc_2020_co2e" , 
-                   "nmvoc_2020_co2e",
-                   "co2_2020_co2e" ,
-                   "nox_2020_co2e")) %>% 
-  rename(geo_id = X)
-
-
-indicators = indicators %>% 
-  left_join(indicators_GHG_1_unit,
-            by = "geo_id")
 
 
 # label indicator map function -----
@@ -177,63 +144,13 @@ pal.indicator.fun = function(selected_indicator_values){
   return(pal_indicator)
 }
 
-
-# cities comparison ----
-
-cities_comparison_list = c("ARG-Mendoza_ADM-3-union_1",
-                           "ARG-Mar_del_Plata_ADM-3_1",
-                           "ARG-Ushuaia_ADM-4_1",
-                           "ARG-Salta_ADM-2-union_1",
-                           "ARG-Buenos_Aires_ADM-2-union_1",
-                           "BRA-Teresina_ADM-4-union_1",
-                           "BRA-Florianopolis_ADM-4-union_1",
-                           "BRA-Belem_ADM-4-union_1",
-                           "CRI-San_Jose_ADM-2-union_1",
-                           "RWA-Kigali_ADM-4-union_1",
-                           "SLE-Freetown_city_ADM-4-union_1",
-                           "MAR-Marrakech_ADM-2_1",
-                           "IND-Chennai_ADM-4-union_1",
-                           "IND-Pune_ADM-4-union_1",
-                           "IND-Surat_ADM-4-union_1",
-                           "CHN-Chengdu_ADM-3-union_1",
-                           "CHN-Chongqing_ADM-1_1",
-                           "CHN-Ningbo_ADM-3-union_1",
-                           "IDN-Jakarta_ADM-4-union_1",
-                           "IDN-Bitung_ADM-2_1",
-                           "IDN-Semarang_ADM-1_1",
-                           "IDN-Balikpapan_ADM-4-union_1",
-                           "IDN-Palembang_ADM-2-union_1")
-
-indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list, ]
-
 ############### App
 
 ui = tagList(
   useShinyjs(),
-#   tags$script(type="text/javascript"),
-#   tags$script(src="https://cdn.weglot.com/weglot.min.js"),
-#   tags$script(src="Weglot.initialize({
-#         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
-#     })
-# "),
-#   tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
-#   tags$script(src="Weglot.initialize({
-#         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
-#     })
-# "),
-# tags$head(
-#   tags$script('type="text/javascript" src="https://cdn.weglot.com/weglot.min.js"'),
-#   tags$script(src="Weglot.initialize({
-#         api_key: 'wg_af620c4f25dacaa6bc9fe25247f6be664'
-#     })
-# ")),
-
-tags$head(
-  tags$script(src="https://cdn.weglot.com/weglot.min.js"),
-  tags$script(src=enc2utf8("Weglot.initialize({api_key:'wg_af620c4f25dacaa6bc9fe25247f6be664'})"))),
-  navbarPage(title = div("Indicators Dashboard dev urbanshift",
-                         img(src = "logo.png",
-                             height = "30px",
+  navbarPage(title = div("Indicators Dashboard",
+                         img(src = logo_file,
+                             height = logo_height,
                              style = "top: -3px;
                                     right: -900px;padding-right:100px;")),
              id = "active_tab",
@@ -244,46 +161,46 @@ tags$head(
                       ### Filters ----
                       fluidRow(
                         
-                        
-                        
                         column(3,
                                
-                               
+                               # ### Select the project  ----
+                               # selectInput(inputId = "project",
+                               #             label = tags$span(style="color: #242456;","Select project"),
+                               #             choices = c("urbanshift",'cities4forests'),
+                               #             selected = "urbanshift",
+                               #             width = '100%'),
                                
                                ### Select city  ----
                                selectInput(inputId = "city",
-                                           # label = "Select your city",
                                            label = tags$span(style="color: #242456;","Select your city"),
+                                           # choices =  NULL,
                                            choices = cities,
-                                           # selected = "CRI-San_Jose",
-                                           selected = "BRA-Belem",
+                                           selected = default_city,
                                            width = '100%'),
                                
                                # select theme ----
                                selectizeInput(inputId = "theme",
-                                              # label = "Theme",
                                               label = tags$span(style="color: #242456;","Theme"),
+                                              # choices =  NULL,
                                               choices = indicators_themes,
-                                              selected = indicators_themes[1],
+                                              selected = default_theme,
                                               multiple = FALSE,
                                               width = '100%'),
                                
                                # select indicator ----
                                selectizeInput(inputId = "indicator",
-                                              # label = "Select indicator",
                                               label = tags$span(style="color: #242456;","Select indicator"),
+                                              # choices =  NULL,
                                               choices = indicators_list,
-                                              selected = "Natural Areas",
+                                              selected = default_indicator,
                                               multiple = FALSE,
                                               width = '100%'),
                                
                                # Main indicators
                                
-                               # h4("City wide level: "),
                                tags$span(h4("City wide level: "),
                                          style="color: #242456;"),
                                htmlOutput("city_wide_indicator"),
-                               
                                
                                
                         ),
@@ -294,6 +211,8 @@ tags$head(
                                            id = "tabs",
                                            ### Map plot
                                            tabPanel("Map", 
+                                                    # withSpinner(leafletOutput("indicator_map", 
+                                                    #               height = 500)),
                                                     leafletOutput("indicator_map", 
                                                                   height = 500),
                                                     # disconnect message
@@ -308,17 +227,13 @@ tags$head(
                                                       width = 450,
                                                       top = 50,
                                                       size = 22),
-                                                    # # disconnect dashboard
-                                                    # actionButton("disconnect", 
-                                                    #              "Disconnect the dashboard",
-                                                    #              width = '30%'
-                                                    #              # class = "btn-warning",
-                                                    #              # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                                    # ),
                                                     # download geo data
                                                     downloadButton(outputId = "download_geo_data",
-                                                                   label = "Download geospatial data")
-                                                    ),
+                                                                   label = "Download geospatial data"),
+                                                    # # download geo data
+                                                    # downloadButton(outputId = "download_map",
+                                                    #                label = "Download map")
+                                           ),
                                            ### Table plot
                                            tabPanel("Table", DT::dataTableOutput("indicator_table"),
                                                     downloadButton(outputId = "downloadData",
@@ -343,13 +258,37 @@ tags$head(
   )
 )
 
+
+
 # Define server
 server <- function(input, output, session) {
+  
   
   # disconnect message
   observeEvent(input$disconnect, {
     session$close()
   })
+  
+  # # Update cities based on selected project
+  # observeEvent(input$project,{
+  #   updateSelectInput(session,
+  #                     'city',
+  #                     choices=unique(boundary_georef[boundary_georef$project_name==input$project, "geo_name"]),
+  #                     selected = unique(boundary_georef[boundary_georef$project_name==input$project, "geo_name"])[1],
+  #   )
+  # 
+  # })
+  
+  # Update themes based on selected project
+  observeEvent(input$project,{
+    updateSelectInput(session,
+                      'theme',
+                      choices=unique(indicators_definitions[indicators_definitions$project_name==input$project, "theme"]),
+                      selected = unique(indicators_definitions[indicators_definitions$project_name==input$project, "theme"])[1],
+    )
+  })
+  
+  
   
   # Update indicators based on selected theme
   observeEvent(input$theme,{
@@ -368,14 +307,53 @@ server <- function(input, output, session) {
       showTab(inputId = "tabs", target = "Table")
       hideTab(inputId = "tabs", target = "Map")
       show("city_wide_indicator") 
-    } else if(!input$indicator %in% c("Change in greenhouse gas emissions")){
+    } else if(input$indicator %in% c("High pollution days",
+                                     "Greenhouse gas emissions",
+                                     "Air pollutant emissions")){
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Definitions")
+      showTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      showTab(inputId = "tabs", target = "Benchmark")
+      show("city_wide_indicator")
+    } else if(input$indicator == "Air pollution (by pollutant)"){
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      hideTab(inputId = "tabs", target = "Benchmark") 
+      hide("city_wide_indicator") 
+    } else if(input$indicator == "Air pollution (by sector)"){
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      hideTab(inputId = "tabs", target = "Benchmark") 
+      hide("city_wide_indicator") 
+    } else if(input$indicator == "Exposure to PM 2.5"){
+      showTab(inputId = "tabs", target = "Benchmark") 
+      showTab(inputId = "tabs", target = "Definitions") 
+      showTab(inputId = "tabs", target = "Table")
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Map")
+      show("city_wide_indicator") 
+    } else if(input$indicator  %in% c("Extreme heat hazard",
+                                      "Extreme precipitation hazard")){
+      showTab(inputId = "tabs", target = "Benchmark") 
+      showTab(inputId = "tabs", target = "Definitions") 
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Chart")
+      hideTab(inputId = "tabs", target = "Map")
+      show("city_wide_indicator") 
+    } else if(!input$indicator %in% c("Exposure to PM 2.5",
+                                      "High pollution days",
+                                      "Air pollution (by pollutant)",
+                                      "Air pollution (by sector)")){
       showTab(inputId = "tabs", target = "Table")
       showTab(inputId = "tabs", target = "Chart")
       showTab(inputId = "tabs", target = "Map")
       showTab(inputId = "tabs", target = "Benchmark") 
       show("city_wide_indicator") 
-    }
+    } 
   })
+  
+  
   
   
   observe({
@@ -383,22 +361,26 @@ server <- function(input, output, session) {
     # update panel data when the panel is selected
     input$active_tab
     
-    geo_name = input$city
-    print(geo_name)
+    # selected_project = input$project
+    # print(selected_project)
+    
+    selected_city = input$city
+    print(selected_city)
+    
+    
     
     # read boundaries -----
-    aoi_boundary_name = boundary_georef[boundary_georef$geo_name == geo_name, "aoi_boundary_name"]
-    units_boundary_name = boundary_georef[boundary_georef$geo_name == geo_name, "units_boundary_name"]
+    aoi_boundary_name = boundary_georef[boundary_georef$geo_name == input$city, "aoi_boundary_name"]
+    units_boundary_name = boundary_georef[boundary_georef$geo_name == input$city, "units_boundary_name"]
     
     aoi_boundary_name = aoi_boundary_name[1]
     units_boundary_name = units_boundary_name[1]
     
-    print(aoi_boundary_name)
-    print(units_boundary_name)
-    
     boundary_aoi = st_read(paste(aws_s3_path,
-                                 "data/boundaries/v_0/boundary-",
-                                 geo_name,
+                                 "data/",
+                                 selected_project,
+                                 "/boundaries/boundary-",
+                                 selected_city,
                                  "-",
                                  aoi_boundary_name,
                                  ".geojson",
@@ -406,16 +388,17 @@ server <- function(input, output, session) {
     )
     
     boundary_unit = st_read(paste(aws_s3_path,
-                                  "data/boundaries/v_0/boundary-",
-                                  geo_name,
+                                  "data/",
+                                  selected_project,
+                                  "/boundaries/boundary-",
+                                  selected_city,
                                   "-",
                                   units_boundary_name,
                                   ".geojson",
                                   sep = "")
     )
     
-    
-    # join ----------------
+    # join boundaries with indicators ----------------
     
     aoi_indicators = boundary_aoi %>%
       dplyr::select(geo_id) %>%
@@ -429,62 +412,31 @@ server <- function(input, output, session) {
     
     selected_indicator_label = input$indicator
     
-    selected_indicator_name = indicators_definitions %>% 
-      filter(indicator_label %in% selected_indicator_label) %>% 
+    selected_indicator_name = indicators_definitions %>%
+      filter(indicator_label %in% selected_indicator_label) %>%
       pull(indicator_name)
     
-    # print(selected_indicator_name)
-    
     # get indicator legend  -----
-    selected_indicator_legend = indicators_definitions %>% 
-      filter(indicator_label %in% selected_indicator_label) %>% 
+    selected_indicator_legend = indicators_definitions %>%
+      filter(indicator_label %in% selected_indicator_label) %>%
       pull(indicator_legend)
     
     # get indicator values  -----
     
-    selected_indicator_values = unit_indicators %>% 
-      as.data.frame() %>% 
+    selected_indicator_values = unit_indicators %>%
+      as.data.frame() %>%
       pull(selected_indicator_name)
-    
-    # print(selected_indicator_values)
     
     # indicator color values ----
     
-    
-    
-    # pal_indicator<- colorNumeric(palette = "Greens", 
-    #                              domain = selected_indicator_values,
-    #                              na.color = "gray",
-    #                              revers = FALSE)
-    
-    # pal.indicator.fun = function(selected_indicator_values){
-    #   if(is.na(sum(is.na(selected_indicator_values)) == length(selected_indicator_values)))
-    #   {
-    #     print("NOT available")
-    #     selected_indicator_values = 0
-    #     
-    #     pal_indicator<- colorNumeric(palette = "gray",
-    #                                  domain = selected_indicator_values,
-    #                                  na.color = "gray",
-    #                                  revers = FALSE)
-    #   } else {
-    #     pal_indicator<- colorNumeric(palette = "Greens",
-    #                                  domain = selected_indicator_values,
-    #                                  na.color = "gray",
-    #                                  revers = FALSE)
-    #   }
-    #   return(pal_indicator)
-    # }
-    
-    pal_indicator = pal.indicator.fun(selected_indicator_values) 
-    
+    pal_indicator = pal.indicator.fun(selected_indicator_values)
     
     # indicator labels for map ----
     
     labels_indicator <- sprintf("<strong>%s</strong><br/>%s: %s",
                                 unit_indicators$geo_name,
                                 selected_indicator_label,
-                                round(selected_indicator_values, 2)) %>% 
+                                round(selected_indicator_values, 2)) %>%
       lapply(htmltools::HTML)
     
     
@@ -493,20 +445,46 @@ server <- function(input, output, session) {
     ########################
     
     # layers: esa world cover
-    if(input$indicator %in% c("Natural Areas",
-                              "Connectivity of ecological networks",
-                              "Biodiversity in built-up areas (birds)",
-                              "Built-up Key Biodiversity Areas")){
+    if(input$indicator %in% c(
+      # urbanshift indicators
+      "Natural Areas",
+      "Connectivity of ecological networks",
+      "Biodiversity in built-up areas (birds)",
+      "Built-up Key Biodiversity Areas",
+      "Urban open space for public use",
+      # c4f indicators
+      "Open space for public use",
+      "Surface reflectivity",
+      "Built land without tree cover",
+      "Exposure to coastal and river flooding",
+      "Land near natural drainage",
+      "Built areas without vegetation cover",
+      "Impervious surfaces",
+      "High land surface temperature")){
       
-      # ESA land cover
-      
-      esa_worldcover_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
-                                       "data/land_use/esa_world_cover/v_0/",
-                                       geo_name,
-                                       "-",
-                                       aoi_boundary_name,
-                                       "-ESA-world_cover-2020-100m.tif",
-                                       sep = "")
+      if(selected_project == "urbanshift"){
+        esa_worldcover_data_path = paste("/vsicurl/",
+                                         aws_s3_path,
+                                         "data/",
+                                         selected_project,
+                                         "/land_use/esa_world_cover/",
+                                         selected_city,
+                                         "-",
+                                         aoi_boundary_name,
+                                         "-ESA-world_cover-2020-100m.tif",
+                                         sep = "")
+      } else if(selected_project == "cities4forests"){
+        esa_worldcover_data_path = paste("/vsicurl/",
+                                         aws_s3_path,
+                                         "data/",
+                                         selected_project,
+                                         "/land_use/esa_world_cover/",
+                                         selected_city,
+                                         "-",
+                                         aoi_boundary_name,
+                                         "-ESA-world_cover-2020_50m.tif",
+                                         sep = "")
+      }
       
       
       # collect raster data
@@ -519,7 +497,7 @@ server <- function(input, output, session) {
       # define color palette for WOrld cover
       Trees_10_green = "#006400"
       Shrubland_20_orange = "#ffbb22"
-      Grassland_30_yellow = "#ffff4c" 
+      Grassland_30_yellow = "#ffff4c"
       Cropland_40_mauve = "#f096ff"
       Built_up_50_red = "#fa0000"
       Barren_sparse_vegetation_60_gray = "#b4b4b4"
@@ -545,7 +523,7 @@ server <- function(input, output, session) {
                             'Mangroves','Moss/lichen')
       
       # define a color palette
-      pal_worldcover <- colorFactor(palette = worldcover_col, 
+      pal_worldcover <- colorFactor(palette = worldcover_col,
                                     levels = c("10","20","30","40","50","60",
                                                "70","80","90","95","100"),
                                     na.color = "transparent")
@@ -560,15 +538,21 @@ server <- function(input, output, session) {
       
     }
     
+    
     # layers: GLAD land cover
-    if(input$indicator %in% c("Proportion of natural areas restored",
-                              "Number of habitat types restored")){
+    if(input$indicator %in% c(
+      # urbanshift indicators
+      "Proportion of natural areas restored",
+      "Number of habitat types restored")){
       
       
       # GLAD 2000 ----
-      glad_2000_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
-                                  "data/land_use/GLAD-ARD/v_0/",
-                                  geo_name,
+      glad_2000_data_path = paste("/vsicurl/",
+                                  aws_s3_path,
+                                  "data/",
+                                  selected_project,
+                                  "/land_use/glad_ard/",
+                                  selected_city,
                                   "-",
                                   aoi_boundary_name,
                                   "-GLADlandcover-2000-100m.tif",
@@ -582,9 +566,12 @@ server <- function(input, output, session) {
       
       # GLAD 2020 ----
       
-      glad_2020_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
-                                  "data/land_use/GLAD-ARD/v_0/",
-                                  geo_name,
+      glad_2020_data_path = paste("/vsicurl/",
+                                  aws_s3_path,
+                                  "data/",
+                                  selected_project,
+                                  "/land_use/glad_ard/",
+                                  selected_city,
                                   "-",
                                   aoi_boundary_name,
                                   "-GLADlandcover-2020-100m.tif",
@@ -598,7 +585,6 @@ server <- function(input, output, session) {
       
       
       # color ----
-      # define color palette for WOrld cover
       bareGround_0 = "#FEFECC"
       shortVegetation_1 = "#B9B91E"
       forest_2 = "#347834"
@@ -633,7 +619,7 @@ server <- function(input, output, session) {
       
       
       # define a color palette
-      pal_glad <- colorFactor(palette = glad_col, 
+      pal_glad <- colorFactor(palette = glad_col,
                               levels = c("0","1","2","3","4","5",
                                          "6","7","8","9"),
                               na.color = "transparent")
@@ -641,9 +627,12 @@ server <- function(input, output, session) {
       
       # GLAD changes ----
       
-      glad_change_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/",
-                                    "data/land_use/GLAD-ARD/v_0/",
-                                    geo_name,
+      glad_change_data_path = paste("/vsicurl/",
+                                    aws_s3_path,
+                                    "data/",
+                                    selected_project,
+                                    "/land_use/glad_ard/",
+                                    selected_city,
                                     "-",
                                     aoi_boundary_name,
                                     "-habitatchange-2000to2020-100m.tif",
@@ -669,7 +658,7 @@ server <- function(input, output, session) {
       
       
       # define a color palette
-      pal_glad_change <- colorFactor(palette = glad_change_col, 
+      pal_glad_change <- colorFactor(palette = glad_change_col,
                                      levels = c("10","1"),
                                      na.color = "transparent")
       
@@ -687,32 +676,69 @@ server <- function(input, output, session) {
       
     }
     
-    
     # layers: OSM open space ----
-    if(input$indicator %in% c("Recreational space per capita",
-                              "Urban open space for public use",
-                              "Proximity to public open space")){
-      osm_open_space = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/open_space/openstreetmap/v_0/",
-                                     geo_name,
-                                     "-",
-                                     aoi_boundary_name,
-                                     "-OSM-open_space-2022.geojson",
-                                     sep = "")
-      )
+    if(input$indicator %in% c(
+      # urbanshift indicators
+      "Recreational space per capita",
+      "Urban open space for public use",
+      "Proximity to public open space",
+      # c4f indicators
+      "Open space for public use",
+      "Access to public open space"
+    )){
+      
+      
+      osm_open_space_path = paste(aws_s3_path,
+                                  "data/",
+                                  selected_project,
+                                  "/open_space/openstreetmap/",
+                                  selected_city,
+                                  "-",
+                                  aoi_boundary_name,
+                                  "-OSM-open_space-2022.geojson",
+                                  sep = "")
+      
+      osm_open_space = st_read(osm_open_space_path)
+      
       
     }
     
-    
     # layers: population ----
-    if(input$indicator %in% c("Recreational space per capita",
-                              "Proximity to public open space",
-                              "Proximity to tree cover")){
-      pop_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
-                            geo_name,
-                            "-",
-                            aoi_boundary_name,
-                            "-WorldPop-population-2020.tif",
-                            sep = "")
+    if(input$indicator %in% c(
+      # urbanshift indicators
+      "Recreational space per capita",
+      "Proximity to public open space",
+      "Proximity to tree cover",
+      # c4f indicators
+      "Access to public open space",
+      "Access to tree cover",
+      "Exposure to PM 2.5"))
+    {
+      
+      if(selected_project == "urbanshift"){
+        pop_data_path = paste("/vsicurl/",
+                              aws_s3_path,
+                              "data/",
+                              selected_project,
+                              "/population/worldpop/",
+                              selected_city,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population-2020.tif",
+                              sep = "")
+      } else if(selected_project == "cities4forests"){
+        pop_data_path = paste("/vsicurl/",
+                              aws_s3_path,
+                              "data/",
+                              selected_project,
+                              "/population/worldpop/",
+                              selected_city,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+      }
+      
       
       # collect raster data
       city_pop = raster(pop_data_path)
@@ -730,14 +756,38 @@ server <- function(input, output, session) {
       
     }
     
+    
     # layers: Population with access to open space within 400 meters ----
-    if(input$indicator %in% c("Proximity to public open space")){
-      pop_openspace_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
-                                      geo_name,
-                                      "-",
-                                      aoi_boundary_name,
-                                      "-population-wOpenSpace-2020.tif",
-                                      sep = "")
+    if(input$indicator %in% c(
+      # urbanshift indicators
+      "Proximity to public open space",
+      # c4f indicators
+      "Access to public open space")){
+      
+      if(selected_city == "MEX-Mexico_City"){
+        pop_openspace_data_path = paste("/vsicurl/",
+                                        aws_s3_path,
+                                        "data/",
+                                        selected_project,
+                                        "/population/worldpop/",
+                                        selected_city,
+                                        "-",
+                                        aoi_boundary_name,
+                                        "-WorldPop-population-2020.tif",
+                                        sep = "")
+      } else {
+        pop_openspace_data_path = paste("/vsicurl/",
+                                        aws_s3_path,
+                                        "data/",
+                                        selected_project,
+                                        "/population/worldpop/",
+                                        selected_city,
+                                        "-",
+                                        aoi_boundary_name,
+                                        "-population-wOpenSpace-2020.tif",
+                                        sep = "")
+      }
+      
       
       # collect raster data
       city_pop_openspace = raster(pop_openspace_data_path)
@@ -756,14 +806,39 @@ server <- function(input, output, session) {
     }
     
     # layers: tree cover----
-    if(input$indicator %in% c("Proximity to tree cover",
-                              "Tree cover")){
-      tml_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
-                            geo_name,
-                            "-",
-                            aoi_boundary_name,
-                            "-TML-tree_cover-2020-50m.tif",
-                            sep = "")
+    if(input$indicator %in% 
+       # urbanshift indicators
+       c("Proximity to tree cover",
+         "Tree cover",
+         # c4f indicators 
+         "Access to tree cover",
+         "Built land without tree cover") &
+       # cities without tree cover data
+       !input$city %in% c("BRA-Salvador","MEX-Monterrey")){
+      if(selected_project == "urbanshift"){
+        tml_data_path = paste(aws_s3_path,
+                              "data/",
+                              selected_project,
+                              "/tree_cover/tree_mosaic_land/",
+                              selected_city,
+                              "-",
+                              aoi_boundary_name,
+                              "-TML-tree_cover-2020-50m.tif",
+                              sep = "")
+      } else if(selected_project == "cities4forests"){
+        tml_data_path = paste("/vsicurl/",
+                              aws_s3_path,
+                              "data/",
+                              selected_project,
+                              "/tree_cover/tree_mosaic_land/",
+                              selected_city,
+                              "-",
+                              aoi_boundary_name,
+                              "-TML-tree_cover-2020_50m.tif",
+                              sep = "")
+      }
+      
+      
       
       # collect raster data
       city_tml = raster(tml_data_path)
@@ -773,6 +848,8 @@ server <- function(input, output, session) {
       
       city_tml_boundary[city_tml_boundary==0] = NA
       
+      
+      
       # define color for tree cover
       pal_tml <- colorNumeric(palette = "Greens",
                               domain = values(city_tml_boundary), 
@@ -780,15 +857,28 @@ server <- function(input, output, session) {
       
     }
     
+    
+    
     # layers: Population with access to at least 10% mean tree cover within 400 meters (persons per hectare) ----
-    if(input$indicator %in% c("Proximity to tree cover")){
+    if(input$indicator %in%
+       # urbanshift indicators
+       c("Proximity to tree cover",
+         # c4f indicators
+         "Access to tree cover") &
+       # cities without tree cover data
+       !input$city %in% c("BRA-Salvador","MEX-Monterrey")){
       
-      pop_tree_cover_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/population/worldpop/v_0/",
-                                       geo_name,
+      pop_tree_cover_data_path = paste("/vsicurl/",
+                                       aws_s3_path,
+                                       "data/",
+                                       selected_project,
+                                       "/population/worldpop/",
+                                       selected_city,
                                        "-",
                                        aoi_boundary_name,
                                        "-population-wTreeCover-2020.tif",
                                        sep = "")
+      
       
       # collect raster data
       pop_tree_cover_data = raster(pop_tree_cover_data_path)
@@ -806,15 +896,25 @@ server <- function(input, output, session) {
       
     }
     
-    # layers: Flooding impervious surfaces  -----
-    if(input$indicator == "Permeable areas"){
+    
+    # layers: Flooding impervious surfaces  -----  
+    if(input$indicator %in%
+       # urbanshift indicators
+       c("Permeable areas",
+         # c4f indicators
+         "Impervious surfaces")){
       
-      impervious_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/impervious/tsinghua/v_0/",
-                                   geo_name,
+      impervious_data_path = paste("/vsicurl/",
+                                   aws_s3_path,
+                                   "data/",
+                                   selected_project,
+                                   "/impervious/tsinghua/",
+                                   selected_city,
                                    "-",
                                    aoi_boundary_name,
                                    "-impervious-areas-through-2018.tif",
                                    sep = "")
+      
       
       # collect raster data
       city_impervious = raster(impervious_data_path)
@@ -837,6 +937,7 @@ server <- function(input, output, session) {
       
     }
     
+    
     # layers: Protected areas ----
     if(input$indicator %in% c("Protected areas",
                               "Protection of Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
@@ -851,13 +952,18 @@ server <- function(input, output, session) {
                                                                                            "IND-Surat",
                                                                                            "MAR-Marrakech",
                                                                                            "RWA-Kigali")){
-      wdpa = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/WDPA/v_1/",
-                           geo_name,
-                           "-",
-                           aoi_boundary_name,
-                           "-WDPA-2022.geojson",
-                           sep = "")
-      )
+      
+      wdpa_data_path = paste(aws_s3_path,
+                             "data/",
+                             selected_project,
+                             "/biodiversity/wdpa/",
+                             selected_city,
+                             "-",
+                             aoi_boundary_name,
+                             "-WDPA-2022.geojson",
+                             sep = "")
+      
+      wdpa = st_read(wdpa_data_path)
       
     }
     
@@ -865,24 +971,38 @@ server <- function(input, output, session) {
     if(input$indicator %in% c("Protection of Key Biodiversity Areas",
                               "Built-up Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
                                                                                       "BRA-Teresina")){
-      kba = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/KBA/v_1/",
-                          geo_name,
-                          "-",
-                          aoi_boundary_name,
-                          "-KBA-2022.geojson",
-                          sep = "")
-      )
+      
+      kba_data_path = paste(aws_s3_path,
+                            "data/",
+                            selected_project,
+                            "/biodiversity/kba/",
+                            selected_city,
+                            "-",
+                            aoi_boundary_name,
+                            "-KBA-2022.geojson",
+                            sep = "")
+      
+      kba = st_read(kba_data_path)
+      
       
     }
     
+    
     # layers: GBIF - Vascular plant species  ----
     if(input$indicator %in% c("Vascular plant species")){
-      gbif_Tracheophyta = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Tracheophyta-",
-                                        geo_name,
-                                        "-",
-                                        aoi_boundary_name,
-                                        ".geojson",
-                                        sep = ""))
+      
+      gbif_Tracheophyta_data_path = paste(aws_s3_path,
+                                          "data/",
+                                          selected_project,
+                                          "/biodiversity/gbif/Tracheophyta-",
+                                          selected_city,
+                                          "-",
+                                          aoi_boundary_name,
+                                          ".geojson",
+                                          sep = "")
+      
+      gbif_Tracheophyta = st_read(gbif_Tracheophyta_data_path)
+      
       
       gbif_Tracheophyta = gbif_Tracheophyta %>% 
         mutate(long = unlist(map(gbif_Tracheophyta$geometry,1)),
@@ -893,12 +1013,18 @@ server <- function(input, output, session) {
     
     # layers: GBIF - Bird species  ----
     if(input$indicator %in% c("Bird species")){
-      gbif_Aves = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Aves-",
-                                geo_name,
-                                "-",
-                                aoi_boundary_name,
-                                ".geojson",
-                                sep = ""))
+      
+      gbif_Aves_data_path = paste(aws_s3_path,
+                                  "data/",
+                                  selected_project,
+                                  "/biodiversity/gbif/Aves-",
+                                  selected_city,
+                                  "-",
+                                  aoi_boundary_name,
+                                  ".geojson",
+                                  sep = "")
+      
+      gbif_Aves = st_read(gbif_Aves_data_path)
       
       gbif_Aves = gbif_Aves %>% 
         mutate(long = unlist(map(gbif_Aves$geometry,1)),
@@ -907,14 +1033,22 @@ server <- function(input, output, session) {
       
     }
     
+    
     # layers: GBIF - Arthropoda  ----
     if(input$indicator %in% c("Arthropod species")){
-      gbif_Arthropod = st_read(paste("https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/biodiversity/GBIF/Arthropoda-",
-                                     geo_name,
-                                     "-",
-                                     aoi_boundary_name,
-                                     ".geojson",
-                                     sep = ""))
+      
+      gbif_Arthropod_data_path = paste(aws_s3_path,
+                                       "data/",
+                                       selected_project,
+                                       "/biodiversity/gbif/Arthropoda-",
+                                       selected_city,
+                                       "-",
+                                       aoi_boundary_name,
+                                       ".geojson",
+                                       sep = "")
+      
+      gbif_Arthropod = st_read(gbif_Arthropod_data_path)
+      
       
       gbif_Arthropod = gbif_Arthropod %>% 
         mutate(long = unlist(map(gbif_Arthropod$geometry,1)),
@@ -923,15 +1057,276 @@ server <- function(input, output, session) {
       
     }
     
-    # layers: carbon flux  -----
-    if(input$indicator == "Climate change impact of trees"){
+    
+    # layers: Flooding  -----
+    if(input$indicator == "Exposure to coastal and river flooding"){
       
-      carbonflux_data_path = paste("/vsicurl/https://cities-urbanshift.s3.eu-west-3.amazonaws.com/data/tree_cover/wri-forest-carbon-fluxes/v_0/",
-                                   geo_name,
-                                   "-",
-                                   aoi_boundary_name,
-                                   "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021-100m.tif",
-                                   sep = "")
+      flood_data_path = paste("/vsicurl/",
+                              aws_s3_path,
+                              "data/",
+                              selected_project,
+                              "/flooding/aqueduct/",
+                              selected_city,
+                              "-",
+                              aoi_boundary_name,
+                              "-flood-innundation-2050-rp0100.tif",
+                              sep = "")
+      
+      
+      # collect raster data
+      city_flood = raster(flood_data_path)
+      
+      city_flood_boundary = raster::mask(city_flood,
+                                         boundary_aoi)
+      
+      # color flood 
+      flood_values = values(city_flood_boundary)[!is.na(values(city_flood_boundary))]
+      
+      pal_flood <- colorNumeric("Blues", 
+                                flood_values,
+                                na.color = "transparent",
+                                reverse = FALSE)
+      
+      
+      
+    }
+    
+    # layers: Flooding  -----
+    if(input$indicator == "Land near natural drainage"){
+      
+      hand_data_path = paste("/vsicurl/",
+                             aws_s3_path,
+                             "data/",
+                             selected_project,
+                             "/flooding/global30mHAND/",
+                             selected_city,
+                             "-",
+                             aoi_boundary_name,
+                             "-HAND-1m-1000km2FA.tif",
+                             sep = "")
+      
+      
+      # collect raster data
+      city_flood_hand = raster(hand_data_path)
+      
+      city_flood_hand_boundary = raster::mask(city_flood_hand,
+                                              boundary_aoi)
+      
+      city_flood_hand_boundary[city_flood_hand_boundary<1] = NA
+      
+      
+      
+    }
+    
+    # layers: Riparian zones  -----
+    if(input$indicator == "Riparian zones without vegetation cover"){
+      
+      riparian_data_path = paste("/vsicurl/",
+                                 aws_s3_path,
+                                 "data/",
+                                 selected_project,
+                                 "/flooding/riparian/",
+                                 selected_city,
+                                 "-",
+                                 aoi_boundary_name,
+                                 "-RiparianBuffer.tif",
+                                 sep = "")
+      
+      
+      # collect raster data
+      city_riparian = raster(riparian_data_path)
+      
+      
+      city_riparian_boundary = raster::mask(city_riparian,
+                                            boundary_aoi)
+      
+      city_riparian_boundary[city_riparian_boundary==0] = NA
+      
+      # color  
+      riparian_values = values(city_riparian_boundary)[!is.na(values(city_riparian_boundary))]
+      
+      pal_riparian <- colorNumeric("YlOrBr", 
+                                   riparian_values,
+                                   na.color = "transparent",
+                                   reverse = FALSE)
+      
+      
+      
+    }
+    
+    # layers: slopes  -----
+    if(input$indicator == "Vulnerable steep slopes"){
+      
+      slopes_data_path = paste("/vsicurl/",
+                               aws_s3_path,
+                               "data/",
+                               selected_project,
+                               "/slope/nasa/",
+                               selected_city,
+                               "-",
+                               aoi_boundary_name,
+                               "-slopes-gte10degrees.tif",
+                               sep = "")
+      
+      
+      # collect raster data
+      city_slopes = raster(slopes_data_path)
+      
+      
+      city_slopes_boundary = raster::mask(city_slopes,
+                                          boundary_aoi)
+      city_slopes_boundary[city_slopes_boundary==0] = NA
+      
+      # color  
+      slopes_values = values(city_slopes_boundary)[!is.na(values(city_slopes_boundary))]
+      
+      pal_slopes <- colorNumeric("Greys", 
+                                 slopes_values,
+                                 na.color = "transparent",
+                                 reverse = TRUE)
+      
+      
+      
+    }
+    
+    
+    # layers: lst  -----
+    if(input$indicator == "High land surface temperature"){
+      
+      lst_data_path = paste("/vsicurl/",
+                            aws_s3_path,
+                            "data/",
+                            selected_project,
+                            "/land_surface_temperature/landsat/",
+                            selected_city,
+                            "-",
+                            aoi_boundary_name,
+                            "-land-surface-temperature-2013to2022meanofmonthwhottestday.tif",
+                            sep = "")
+      
+      
+      # collect raster data
+      city_lst = raster(lst_data_path)
+      
+      
+      city_lst_boundary = raster::mask(city_lst,
+                                       boundary_aoi)
+      city_lst_boundary[city_lst_boundary==0] = NA
+      
+      
+      # color  
+      lst_values = values(city_lst_boundary)[!is.na(values(city_lst_boundary))]
+      
+      pal_lst <- colorNumeric("RdYlBu", 
+                              lst_values,
+                              na.color = "transparent",
+                              reverse = TRUE)
+      
+      
+      
+    }
+    
+    # layers: albedo  -----
+    if(input$indicator == "Surface reflectivity"){
+      
+      albedo_data_path = paste("/vsicurl/",
+                               aws_s3_path,
+                               "data/",
+                               selected_project,
+                               "/albedo/sentinel-2/",
+                               selected_city,
+                               "-",
+                               aoi_boundary_name,
+                               "-S2-albedo-2021_50m.tif",
+                               sep = "")
+      
+      
+      # collect raster data
+      city_albedo = raster(albedo_data_path)
+      
+      city_albedo_boundary = raster::mask(city_albedo,
+                                          boundary_aoi)
+      
+      values(city_albedo_boundary) = values(city_albedo_boundary) *0.01
+      
+      # color albedo 
+      albedo_values = values(city_albedo_boundary)[!is.na(values(city_albedo_boundary))]
+      
+      
+      # define color for tree cover
+      pal_albedo <- colorNumeric(palette = "Greys", 
+                                 domain = albedo_values, 
+                                 na.color = "transparent",
+                                 reverse = TRUE)
+      
+      
+      
+    }
+    
+    # layers: pm 2.5  -----
+    if(input$indicator == "Exposure to PM 2.5"){
+      
+      pm25_data_path = paste("/vsicurl/",
+                             aws_s3_path,
+                             "data/",
+                             selected_project,
+                             "/air_pollution/acag/pm25/",
+                             selected_city,
+                             "-",
+                             aoi_boundary_name,
+                             "-ACAG-PM2.5-annual-2020.tif",
+                             sep = "")
+      
+      
+      
+      # collect raster data
+      city_pm25 = raster(pm25_data_path)
+      
+      
+      city_pm25_boundary = raster::mask(city_pm25,
+                                        boundary_aoi)
+      
+      # color  
+      pm25_values = values(city_pm25_boundary)[!is.na(values(city_pm25_boundary))]
+      
+      pal_pm25 <- colorNumeric("YlOrRd", 
+                               pm25_values,
+                               na.color = "transparent",
+                               reverse = FALSE)
+      
+      
+      
+    }
+    
+    # layers: carbon flux  -----
+    if(input$indicator %in% 
+       # urbanshift indicators
+       c("Climate change impact of trees",
+         # c4f indicators 
+         "Carbon flux from trees")){
+      if(selected_project == "urbanshift"){
+        carbonflux_data_path = paste(aws_s3_path,
+                                     "data/",
+                                     selected_project,
+                                     "/tree_cover/wri-forest-carbon-fluxes/",
+                                     selected_city,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021-100m.tif",
+                                     sep = "")
+      } else if(selected_project == "cities4forests"){
+        carbonflux_data_path = paste("/vsicurl/",
+                                     aws_s3_path,
+                                     "data/",
+                                     selected_project,
+                                     "/tree_cover/wri-forest-carbon-fluxes/",
+                                     selected_city,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-WRI-ForestCarbonFluxes-MgCO2eperHA2001-2021.tif",
+                                     sep = "")
+      }
+      
       
       # collect raster data
       city_carbonflux = raster(carbonflux_data_path)
@@ -959,7 +1354,6 @@ server <- function(input, output, session) {
     
     # indicator layer ----
     m = leaflet(boundary_aoi) %>%
-      # addTiles
       addTiles(group = "OSM (default)") %>%
       addProviderTiles(providers$Esri.WorldImagery, group = "Esri") %>%
       addProviderTiles(providers$Stamen.TonerLite, group = "Toner Lite") %>%
@@ -1000,7 +1394,7 @@ server <- function(input, output, session) {
                     direction = "auto")) %>%
       addLegend(pal = pal_indicator,
                 values = selected_indicator_values,
-                opacity = 0.9,
+                opacity = 1,
                 title = selected_indicator_legend,
                 group = selected_indicator_legend,
                 position = "topright",
@@ -1008,23 +1402,23 @@ server <- function(input, output, session) {
       
       # Layers control
       addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend),
         options = layersControlOptions(collapsed = TRUE)
       ) %>% 
       addFullscreenControl()
     
-    
     # BIO-1: Natural Areas ----
     if(input$indicator  %in% c("Natural Areas")){
       m = m %>% 
-        # plot layer: ESA world cover ----
-      addRasterImage(city_esa_worldcover,
-                     colors = pal_worldcover,
-                     opacity = 1,
-                     maxBytes = 100 * 1024 * 1024,
-                     project=FALSE,
-                     group = "Land cover classes (ESA World Cover)") %>%
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover classes (ESA World Cover)") %>%
         addLegend(colors = worldcover_col,
                   labels = worldcover_labels,
                   title = "Land cover classes (ESA World Cover)",
@@ -1074,17 +1468,16 @@ server <- function(input, output, session) {
         hideGroup(c("Natural areas (derived from ESA World Cover)")) 
     }
     
-    
     # BIO-3: Biodiversity in built-up areas (birds) ----
     if(input$indicator  %in% c("Biodiversity in built-up areas (birds)")){
       m = m %>% 
-        # plot layer: ESA world cover ----
-      addRasterImage(city_esa_worldcover,
-                     colors = pal_worldcover,
-                     opacity = 1,
-                     maxBytes = 100 * 1024 * 1024,
-                     project=FALSE,
-                     group = "Land cover classes (ESA World Cover)") %>%
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover classes (ESA World Cover)") %>%
         addLegend(colors = worldcover_col,
                   labels = worldcover_labels,
                   title = "Land cover classes (ESA World Cover)",
@@ -1200,18 +1593,18 @@ server <- function(input, output, session) {
     
     # GRE-1: Recreational space per capita ----
     if(input$indicator %in% c("Recreational space per capita")){
-      m = m %>% 
-        # plot layer: OSM ----
-      addPolygons(data = osm_open_space,
-                  group = "Open spaces for public use (OpenStreetMap)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
+      m = m %>%
+        # plot layer: OSM 
+        addPolygons(data = osm_open_space,
+                    group = "Open spaces for public use (OpenStreetMap)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>%
         # plot layer: POP
         addRasterImage(city_pop_boundary,
                        colors = pal_pop ,
@@ -1219,14 +1612,14 @@ server <- function(input, output, session) {
                        group = "Population density (persons per hectare, WorldPop)",
                        project=FALSE,
                        maxBytes = 8 * 1024 * 1024,
-                       layerId = "Population") %>% 
-        # Legend for population 
+                       layerId = "Population") %>%
+        # Legend for population
         addLegend(pal = pal_pop ,
                   values = pop_values,
                   opacity = 0.9,
                   title = "Population density (persons per hectare, WorldPop)",
                   group = "Population density (persons per hectare, WorldPop)",
-                  position = "bottomleft") %>% 
+                  position = "bottomleft") %>%
         # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
@@ -1235,65 +1628,74 @@ server <- function(input, output, session) {
                           "Open spaces for public use (OpenStreetMap)",
                           "Population density (persons per hectare, WorldPop)"),
         options = layersControlOptions(collapsed = TRUE)
-      ) %>% 
+      ) %>%
         hideGroup(c("Open spaces for public use (OpenStreetMap)",
-                    "Population density (persons per hectare, WorldPop)")) 
+                    "Population density (persons per hectare, WorldPop)"))
     }
     
+    
     # GRE-2: Urban open space for public use----
-    if(input$indicator %in% c("Urban open space for public use")){
+    if(input$indicator %in% c(
+      # urbanshift 
+      "Urban open space for public use",
+      # c4f
+      "Open space for public use") & !input$city %in% c("MEX-Mexico_City","MEX-Monterrey")){
       m = m %>% 
-        # plot layer: OSM ----
-      addPolygons(data = osm_open_space,
-                  group = "Open spaces for public use (OpenStreetMap)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
-      #   # plot layer: ESA world cover ----
-      # addRasterImage(city_esa_worldcover,
-      #                colors = pal_worldcover,
-      #                opacity = 1,
-      #                maxBytes = 100 * 1024 * 1024,
-      #                project=FALSE,
-      #                group = "Land cover classes (ESA World Cover)") %>%
-      #   addLegend(colors = worldcover_col,
-      #             labels = worldcover_labels,
-      #             title = "Land cover classes (ESA World Cover)",
-      #             group = "Land cover classes (ESA World Cover)",
-      #             position = "bottomleft",
-      #             opacity = 1) %>%
-      # Layers control ----
+        # plot layer: OSM 
+        addPolygons(data = osm_open_space,
+                    group = "Open spaces for public use (OpenStreetMap)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover classes (ESA World Cover)") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "Land cover classes (ESA World Cover)",
+                  group = "Land cover classes (ESA World Cover)",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
-                          # "Land cover classes (ESA World Cover)"
+                          "Land cover classes (ESA World Cover)",
                           "Open spaces for public use (OpenStreetMap)"),
         options = layersControlOptions(collapsed = TRUE)
       ) %>% 
-        hideGroup(c("Open spaces for public use (OpenStreetMap)")) 
+        hideGroup(c("Land cover classes (ESA World Cover)",
+                    "Open spaces for public use (OpenStreetMap)")) 
     }
     
-    
     # GRE-3: Recreational space per capita ----
-    if(input$indicator %in% c("Proximity to public open space")){
+    if(input$indicator %in% c(
+      # urbanshift
+      "Proximity to public open space",
+      # c4f
+      "Access to public open space")){
       m = m %>% 
-        # plot layer: OSM ----
-      addPolygons(data = osm_open_space,
-                  group = "Open spaces for public use (OpenStreetMap)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
+        # plot layer: OSM 
+        addPolygons(data = osm_open_space,
+                    group = "Open spaces for public use (OpenStreetMap)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
         # plot layer: POP
         addRasterImage(city_pop_boundary,
                        colors = pal_pop ,
@@ -1339,9 +1741,12 @@ server <- function(input, output, session) {
                     "Population with access to open space within 400 meters (persons per hectare)")) 
     }
     
-    
     # GRE-4: Proximity to tree cover ----
-    if(input$indicator %in% c("Proximity to tree cover")){
+    if(input$indicator %in% c(
+      # urbanshift
+      "Proximity to tree cover",
+      # c4f
+      "Access to tree cover") & !input$city %in% c("BRA-Salvador","MEX-Monterrey")){
       m = m %>% 
         # Raster of tree cover
         addRasterImage(city_tml_boundary, 
@@ -1349,6 +1754,7 @@ server <- function(input, output, session) {
                        opacity = 0.9,
                        maxBytes = 20 * 1024 * 1024,
                        project=FALSE,
+                       layerId = "Tree cover (% of pixel with tree cover)",
                        group = "Tree cover (% of pixel with tree cover)") %>%
         addLegend(pal = pal_tml,
                   values = values(city_tml_boundary), #values(city_tml_aggregate),
@@ -1375,6 +1781,7 @@ server <- function(input, output, session) {
                      colors = pal_pop_tree_cover,
                      opacity = 0.9,
                      group = "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)",
+                     layerId = "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)",
                      project=FALSE,
                      maxBytes = 8 * 1024 * 1024) %>%
         addLegend(pal = pal_pop_tree_cover ,
@@ -1397,30 +1804,28 @@ server <- function(input, output, session) {
                     "Population density (persons per hectare, WorldPop)",
                     "Population with access to at least 10% mean tree cover <br> within 400 meters (persons per hectare)")) 
     }
-    
-    
     # LND-1: Permeable areas ----
     if(input$indicator %in% c("Permeable areas")){
       m = m %>% 
         # plot layer:Impervious surfaces ----
       addRasterImage(city_impervious_boundary,
-                    colors = "black",
-                    opacity = 1,
-                    maxBytes = 100 * 1024 * 1024,
-                    project=FALSE,
-                    group = "Impervious surfaces (Tsinghua GAIA)") %>% 
-      # addRasterImage(city_impervious_boundary,
-      #                colors = pal_impervious,
-      #                opacity = 0.7,
-      #                maxBytes = 20 * 1024 * 1024,
-      #                project=FALSE,
-      #                group = "Impervious surfaces (Tsinghua GAIA)") %>%
-      #   addLegend(pal = pal_impervious,
-      #             values = impervious_values,
-      #             title = "Impervious surfaces (Tsinghua GAIA)",
-      #             group = "Impervious surfaces (Tsinghua GAIA)",
-      #             position = "bottomleft") %>% 
-        # Layers control ----
+                     colors = "black",
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Impervious surfaces (Tsinghua GAIA)") %>% 
+        # addRasterImage(city_impervious_boundary,
+        #                colors = pal_impervious,
+        #                opacity = 0.7,
+        #                maxBytes = 20 * 1024 * 1024,
+        #                project=FALSE,
+        #                group = "Impervious surfaces (Tsinghua GAIA)") %>%
+        #   addLegend(pal = pal_impervious,
+        #             values = impervious_values,
+        #             title = "Impervious surfaces (Tsinghua GAIA)",
+        #             group = "Impervious surfaces (Tsinghua GAIA)",
+        #             position = "bottomleft") %>% 
+      # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
@@ -1456,7 +1861,6 @@ server <- function(input, output, session) {
       ) %>% 
         hideGroup(c("Tree cover <br> (% of pixel with tree cover)")) 
     }
-    
     
     # LND-4: Habitat areas restored + Habitat types restored ----
     if(input$indicator %in% c("Proportion of natural areas restored",
@@ -1511,8 +1915,8 @@ server <- function(input, output, session) {
         #                opacity = 1,
         #                maxBytes = 100 * 1024 * 1024,
         #                project=FALSE,
-        #                group = "Habitat gain") %>% 
-        # Layers control ----
+      #                group = "Habitat gain") %>% 
+      # Layers control ----
       addLayersControl(
         baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
         overlayGroups = c("Administrative boundaries",
@@ -1542,26 +1946,27 @@ server <- function(input, output, session) {
                                                                       "RWA-Kigali")){
       m = m %>% 
         # plot layer: OSM 
-      addPolygons(data = wdpa,
-                  group = "Protected areas (WDPA)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
+        addPolygons(data = wdpa,
+                    group = "Protected areas (WDPA)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
         # Layers control 
-      addLayersControl(
-        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
-        overlayGroups = c("Administrative boundaries",
-                          selected_indicator_legend,
-                          "Protected areas (WDPA)"),
-        options = layersControlOptions(collapsed = TRUE)
-      ) %>% 
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Protected areas (WDPA)"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
         hideGroup(c("Protected areas (WDPA)")) 
     }
+    
     
     # LND-7: Protection of Key Biodiversity Areas ----
     if(input$indicator %in% c("Protection of Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
@@ -1578,36 +1983,36 @@ server <- function(input, output, session) {
                                                                                            "RWA-Kigali")){
       m = m %>% 
         # plot layer: WDPA 
-      addPolygons(data = wdpa,
-                  group = "Protected areas (WDPA)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
+        addPolygons(data = wdpa,
+                    group = "Protected areas (WDPA)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
         # plot layer: KBA 
-      addPolygons(data = kba,
-                  group = "Key biodiversity areas <br> (KBA Partnership)",
-                  stroke = TRUE, color = "black", weight = 1,dashArray = "1",
-                  smoothFactor = 0.5, fill = TRUE, fillColor = "yellow",fillOpacity = 0.5,
-                  highlight = highlightOptions(
-                    weight = 5,
-                    color = "#666",
-                    dashArray = "",
-                    fillOpacity = 0.3,
-                    bringToFront = TRUE)) %>% 
+        addPolygons(data = kba,
+                    group = "Key biodiversity areas <br> (KBA Partnership)",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "yellow",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
         # Layers control 
-      addLayersControl(
-        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
-        overlayGroups = c("Administrative boundaries",
-                          selected_indicator_legend,
-                          "Protected areas (WDPA)",
-                          "Key biodiversity areas <br> (KBA Partnership)"),
-        options = layersControlOptions(collapsed = TRUE)
-      ) %>% 
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_legend,
+                            "Protected areas (WDPA)",
+                            "Key biodiversity areas <br> (KBA Partnership)"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
         hideGroup(c("Protected areas (WDPA)",
                     "Key biodiversity areas <br> (KBA Partnership)")) 
     }
@@ -1655,7 +2060,11 @@ server <- function(input, output, session) {
     }
     
     # GHG-2: Climate change impact of trees ----
-    if(input$indicator == "Climate change impact of trees"){
+    if(input$indicator %in% c(
+      # urbanshift
+      "Climate change impact of trees",
+      # c4f
+      "Carbon flux from trees")){
       m = m %>%
         # plot layer: carbon flux
         addRasterImage(city_carbonflux_boundary,
@@ -1683,13 +2092,422 @@ server <- function(input, output, session) {
         hideGroup(c("Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)"))
     }
     
-    # center map  
+    # GRE-1-2: High land surface temperature ----
+    if(input$indicator == "High land surface temperature"){
+      m = m %>% 
+        # plot layer: ESA world cover
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover types",
+                       layerId = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Layer: LST
+        addRasterImage(city_lst_boundary,
+                       colors = pal_lst,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land surface temperature",
+                       layerId = "Land surface temperature") %>%
+        addLegend(pal = pal_lst,
+                  values = lst_values,
+                  title = "Land surface temperature <br> (C, daytime hot season mean)",
+                  group = "Land surface temperature",
+                  position = "bottomleft") %>% 
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land surface temperature",
+                            "Land cover types"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Land cover types",
+                    "Land surface temperature")) 
+    }
+    
+    
+    # GRE-1-3: Surface reflectivity ----
+    if(input$indicator == "Surface reflectivity"){
+      m = m %>% 
+        # plot layer: Albedo 
+        addRasterImage(city_albedo_boundary,
+                       colors = pal_albedo ,
+                       opacity = 0.9,
+                       group = "Surface albedo",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024) %>%
+        # Legend for population
+        addLegend(pal = pal_albedo ,
+                  values = albedo_values,
+                  opacity = 0.9,
+                  title = "Surface albedo",
+                  group = "Surface albedo",
+                  position = "bottomleft") %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Surface albedo",
+                            "Land cover types"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Surface albedo",
+                    "Land cover types")) 
+    }
+    
+    # GRE-1-4: Built land without tree cover ----
+    if(input$indicator == "Built land without tree cover"){
+      m = m %>% 
+        # Raster of tree cover ----
+      addRasterImage(city_tml_boundary, 
+                     colors = pal_tml,
+                     opacity = 0.9,
+                     maxBytes = 20 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Tree cover") %>%
+        addLegend(pal = pal_tml,
+                  values = values(city_tml_boundary), 
+                  title = "Tree cover percent",
+                  group = "Tree cover",
+                  position = "bottomleft") %>%
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types",
+                            "Tree cover"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Tree cover",
+                    "Land cover types")) 
+    }
+    
+    # GRE-2-3: Exposure to PM 2.5 ----
+    if(input$indicator == "Exposure to PM 2.5"){
+      m = m %>% 
+        addRasterImage(city_pm25_boundary,
+                       colors = pal_pm25 ,
+                       opacity = 0.9,
+                       group = "PM2.5 concentration",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "PM2.5 concentration") %>%
+        # Legend for population
+        addLegend(pal = pal_pm25 ,
+                  values = pm25_values,
+                  opacity = 0.9,
+                  title = "PM2.5 annual average <br> concentration (µg/m3)",
+                  group = "PM2.5 concentration",
+                  position = "bottomleft") %>% 
+        # plot layer: POP ----
+      addRasterImage(city_pop_boundary,
+                     colors = pal_pop ,
+                     opacity = 0.9,
+                     group = "Population",
+                     project=FALSE,
+                     maxBytes = 8 * 1024 * 1024,
+                     layerId = "Population") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population count </br> (persons per 100m)",
+                  group = "Population",
+                  position = "bottomleft") %>%
+        # Layers control ----
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_label,
+                          "PM2.5 concentration",
+                          "Population"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("PM2.5 concentration",
+                    "Population")) 
+    }
+    
+    # GRE-4-1: Exposure to coastal and river flooding -----
+    if(input$indicator == "Exposure to coastal and river flooding"){
+      m = m %>% 
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Raster of flooding --
+        addRasterImage(city_flood,
+                       colors = pal_flood,
+                       opacity = 1,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Coastal/riverine flooding") %>%
+        addLegend(pal = pal_flood,
+                  values = flood_values, 
+                  title = "Inundation depth (decimeters)",
+                  group = "Coastal/riverine flooding",
+                  position = "bottomleft") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types",
+                            "Coastal/riverine flooding"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Coastal/riverine flooding",
+                    "Land cover types")) 
+    }
+    
+    # GRE-4-3: Land near natural drainage ----
+    if(input$indicator == "Land near natural drainage"){
+      m = m %>% 
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # plot layer:HAND ----
+      addRasterImage(city_flood_hand_boundary,
+                     colors = "blue" ,
+                     opacity = 0.9,
+                     group = "Land within 1m height above nearest drainage",
+                     project=FALSE,
+                     maxBytes = 8 * 1024 * 1024) %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types",
+                            "Land within 1m height above nearest drainage"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>% 
+        hideGroup(c("Land cover types",
+                    "Land within 1m height above nearest drainage")) 
+    }
+    
+    # GRE 4-4: 	Impervious surfaces ----
+    if(input$indicator == "Impervious surfaces"){
+      m = m %>%
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # plot layer:Impervious surfaces 
+        addRasterImage(city_impervious_boundary,
+                       colors = pal_impervious,
+                       opacity = 0.7,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Impervious areas") %>%
+        addLegend(pal = pal_impervious,
+                  values = impervious_values,
+                  title = "Impervious areas (%)",
+                  group = "Impervious areas",
+                  position = "bottomleft") %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types",
+                            "Impervious areas"),
+          options = layersControlOptions(collapsed = TRUE)
+        ) %>%
+        hideGroup(c("Land cover types",
+                    "Impervious areas"))
+    }
+    
+    # GRE 4-5: Built areas without vegetation cover ----
+    if(input$indicator == "Built areas without vegetation cover"){
+      m = m %>%
+        # plot layer: ESA world cover 
+        addRasterImage(city_esa_worldcover,
+                       colors = pal_worldcover,
+                       opacity = 1,
+                       maxBytes = 100 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        #   # plot layer:NDVI ----
+      # addRasterImage(city_ndvi_boundary,
+      #                colors = pal_ndvi,
+      #                opacity = 0.9,
+      #                maxBytes = 20 * 1024 * 1024,
+      #                project=FALSE,
+      #                group = "Vegetation cover") %>%
+      #   addLegend(pal = pal_ndvi,
+      #             values = ndvi_values,
+      #             title = "Vegetation cover",
+      #             group = "Vegetation cover",
+      #             position = "bottomleft") %>% 
+      # Layers control
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_label,
+                          "Land cover types"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>%
+        hideGroup(c("Land cover types"))
+    }
+    
+    # GRE 4-6: Riparian zones without vegetation cover ----
+    if(input$indicator == "Riparian zones without vegetation cover"){
+      m = m %>%
+        # Layer: riparian
+        addRasterImage(city_riparian_boundary,
+                       colors = pal_riparian,
+                       opacity = 0.7,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Riparian buffer areas") %>%
+        addLegend(pal = pal_riparian,
+                  values = riparian_values,
+                  title = "Riparian buffer areas <br> (meter from water)",
+                  group = "Riparian buffer areas",
+                  position = "bottomleft") %>% 
+        #   # plot layer:NDVI ----
+      # addRasterImage(city_ndvi_boundary,
+      #                colors = pal_ndvi,
+      #                opacity = 0.9,
+      #                maxBytes = 20 * 1024 * 1024,
+      #                project=FALSE,
+      #                group = "Vegetation cover") %>%
+      #   addLegend(pal = pal_ndvi,
+      #             values = ndvi_values,
+      #             title = "Vegetation cover",
+      #             group = "Vegetation cover",
+      #             position = "bottomleft") %>% 
+      # Layers control
+      addLayersControl(
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_label,
+                          "Riparian buffer areas"),
+        options = layersControlOptions(collapsed = FALSE)
+      ) %>%
+        hideGroup(c("Riparian buffer areas"))
+    }
+    
+    # GRE 4-7: Vulnerable steep slopes ----
+    if(input$indicator == "Vulnerable steep slopes"){
+      m = m %>%
+        # Layer: slopes
+        addRasterImage(city_slopes_boundary,
+                       colors = pal_slopes,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Hillside slopes") %>%
+        addLegend(pal = pal_slopes,
+                  values = slopes_values,
+                  title = "Hillside slopes ((degrees)",
+                  group = "Hillside slopes",
+                  position = "bottomleft") %>% 
+        #   # plot layer:NDVI ----
+      # addRasterImage(city_ndvi_boundary,
+      #                colors = pal_ndvi,
+      #                opacity = 0.9,
+      #                maxBytes = 20 * 1024 * 1024,
+      #                project=FALSE,
+      #                group = "Vegetation cover") %>%
+      #   addLegend(pal = pal_ndvi,
+      #             values = ndvi_values,
+      #             title = "Vegetation cover",
+      #             group = "Vegetation cover",
+      #             position = "bottomleft") %>% 
+      # Layers control
+      addLayersControl(
+        baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_label,
+                          "Hillside slopes"),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>%
+        hideGroup(c("Hillside slopes"))
+    }
+    
+    # plot  map   ------
     output$indicator_map <- renderLeaflet({
-      m
+      m 
+      # addOpacityControls(collapsed = TRUE,
+      #                    category = c("image"),
+      #                    size = "s",
+      #                    position = "bottomright")
+      
     })
     
     
-    
+    #########################################
     # download spatial data ----
     
     unit_indicators_download = unit_indicators %>% 
@@ -1699,10 +2517,11 @@ server <- function(input, output, session) {
                     geo_parent_name,
                     selected_indicator_name)
     
+    
     output$download_geo_data <- downloadHandler(
       filename = function() {
         paste("data-geo-", 
-              geo_name,
+              selected_city,
               "-",
               selected_indicator_label,
               # Sys.Date(), 
@@ -1713,17 +2532,60 @@ server <- function(input, output, session) {
       }
     )
     
+    # download map view -----
+    
+    # https://stackoverflow.com/questions/48685818/save-leaflet-map-in-shiny-with-user-selected-layers
+    
+    # saveWidget(m, "temp.html", selfcontained = FALSE)
+    # webshot("temp.html", file = "plot.png", cliprect = "viewport")
+    # 
+    # output$download_map <- downloadHandler(
+    #   filename <- "map.png",
+    #   content <- function(file) {
+    #     file.copy("plot.png", file)
+    #   }
+    # )
+    
+    # store the current user-created version
+    # of the Leaflet map for download in 
+    # a reactive expression
+    # user.created.map <- reactive({
+    #   
+    #   # call the foundational Leaflet map
+    #   m_download = m %>%
+    #     
+    #     # store the view based on UI
+    #     setView( lng = input$map_center$lng
+    #              ,  lat = input$map_center$lat
+    #              , zoom = input$map_zoom
+    #     )
+    #   
+    # }) 
+    
+    # output$download_map <- downloadHandler(
+    #   filename = "customLeafletmap.png",
+    #   content = function(file) {
+    #     mapshot(x = m, 
+    #             file = file
+    #              # , cliprect = "viewport" # the clipping rectangle matches the height & width from the viewing port
+    #              # , selfcontained = FALSE # when this was not specified, the function for produced a PDF of two pages: one of the leaflet map, the other a blank page.
+    #     )
+    #   } # end of content() function
+    # ) # end of downloadHandler() function
+    
     
     #########################################
     ### Main indicators ----
     
-    # city wide  ----
+    # city wide 
     city_wide_indicator_value = aoi_indicators %>%
       as.data.frame() %>%
       pull(selected_indicator_name) %>% 
       round(2)
     
     # unit
+    
+    city_wide_indicator_value_unit = "%"
     
     if(input$indicator %in% c("Natural Areas",
                               # "Connectivity of ecological networks",
@@ -1751,23 +2613,34 @@ server <- function(input, output, session) {
       
     } else if(input$indicator %in% c("Change in greenhouse gas emissions")){
       city_wide_indicator_value_unit = "% change"
-    }
-    else if(input$indicator %in% c("Climate change impact of trees")){
+      
+    } else if(input$indicator %in% c("Climate change impact of trees")){
       city_wide_indicator_value_unit = "Mg CO2 eq/hectare"
-    }
+      
+    } else if (input$indicator %in% c('Nb days air pollution (carbon monoxide)',
+                                      "High pollution days")){
+      city_wide_indicator_value_unit = "days"
+      
+    } else if(input$indicator %in% c("Greenhouse gas emissions")){
+      city_wide_indicator_value_unit = "% change"
+      
+    } else if(input$indicator %in% c("Air pollutant emissions")){
+      city_wide_indicator_value_unit = "% change" 
+      
+    } else if(input$indicator %in% c("Carbon flux from trees")){
+      city_wide_indicator_value_unit = "Mt CO2 eq/ha"
+      
+    } 
     
     
-    
-    # City-wide inidcator
+    # output text
     output$city_wide_indicator <- renderText({
-      paste("<center>","<font size=5px; weight=500; color=\"#2A553E\"><b>", 
+      paste("<center>","<font size=5px; weight=500; color=\"#168A06\"><b>", 
             city_wide_indicator_value, 
             city_wide_indicator_value_unit,"<br>",
-            # "<font size=2px; weight=500; color=\"#168A06\"><b>",
-            "<font size=2px; weight=500; color=\"#A0D1B4\"><b>",
+            "<font size=2px; weight=500; color=\"#168A06\"><b>",
             selected_indicator_legend)
     })
-    
     
     
     #########################################
@@ -1775,6 +2648,8 @@ server <- function(input, output, session) {
     
     # Table plot
     
+    
+    # urbanshift indicators
     if(input$indicator %in% c("Change in greenhouse gas emissions")){
       table_plot_years = aoi_indicators %>% 
         as.data.frame() %>%
@@ -1822,7 +2697,159 @@ server <- function(input, output, session) {
                       "Gas" = "gas",
                       "Year" = "year",
                       "Emissions (tonnes of CO2 equivalent)" = "value")
-    } else {
+    } 
+    # c4f indicators
+    else if(input$indicator == "High pollution days"){
+      table_plot = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        dplyr::select("City" = geo_name,
+                      "Nitrogen dioxide"= GRE_2_2_2_exceedancedays_nitrogen.dioxide,
+                      "Sulfur dioxide" = GRE_2_2_2_exceedancedays_sulfur.dioxide,
+                      "Ozone" = GRE_2_2_2_exceedancedays_ozone,
+                      "Fine particulate matter" = GRE_2_2_2_exceedancedays_fine.particulate.matter,
+                      "Coarse particulate matter" = GRE_2_2_2_exceedancedays_coarse.particulate.matter,
+                      "Carbon monoxide" = GRE_2_2_2_exceedancedays_carbon.monoxide) %>% 
+        mutate_if(is.numeric, round, 2) 
+    } 
+    else if(input$indicator %in%  c("Air pollution (by pollutant)",
+                                    "Air pollution (by sector)")){
+      table_plot = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        pivot_longer(
+          cols = bc_agl_2010:nmvoc_tro_2020,
+          names_to = c("gas", "sector", "year"),
+          names_pattern = "(.*)_(.*)_(.*)",
+          values_to = "value") %>% 
+        dplyr::select(geo_name,
+                      gas,
+                      sector, 
+                      year, 
+                      value) %>% 
+        filter(year == 2020,
+               sector != 'sum') %>% 
+        mutate_at("gas", 
+                  ~recode(.,
+                          "bc"='Black carbon', 
+                          'ch4'='Methane',
+                          'co' = 'Carbon monoxide',
+                          'co2' = 'Carbon dioxide',
+                          'nox' = 'Nitrogen oxides',
+                          'so2' = 'Sulfur dioxide',
+                          'oc' = 'Organic carbon',
+                          'nh3' = 'Ammonia',
+                          'nmvoc' = 'Non-methane volatile organic compounds')) %>% 
+        mutate_at("sector", 
+                  ~recode(.,
+                          "agl"='Agriculture livestock', 
+                          'ags'='Agriculture soils',
+                          'awb' = 'Agriculture waste burning',
+                          'ene' = 'Power generation',
+                          'fef' = 'Fugitives',
+                          'ind' = 'Industry',
+                          'res' = 'Residential, commercial, and other combustion',
+                          'shp' = 'Ships',
+                          'slv' = 'Solvents',
+                          'sum' = 'All sources',
+                          'swd' = 'Solid waste and wastewater',
+                          'tnr' = 'Off-road transportation',
+                          'tro' = 'Road transportation'))
+    } 
+    else if(input$indicator %in%  c("Air pollutant emissions")){
+      table_plot = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        pivot_longer(
+          cols = bc_agl_2000_usd:nmvoc_tro_2020_usd,
+          names_to = c("gas", "sector","year","unit"),
+          names_pattern = "(.*)_(.*)_(.*)_(.*)",
+          values_to = "value") %>% 
+        dplyr::select(geo_id,
+                      gas,
+                      sector, 
+                      year,
+                      value) %>% 
+        mutate_at("gas", 
+                  ~recode(.,
+                          "bc"='Black carbon', 
+                          'ch4'='Methane',
+                          'co' = 'Carbon monoxide',
+                          'co2' = 'Carbon dioxide',
+                          'nox' = 'Nitrogen oxides',
+                          'so2' = 'Sulfur dioxide',
+                          'oc' = 'Organic carbon',
+                          'nh3' = 'Ammonia',
+                          'nmvoc' = 'Non-methane volatile organic compounds')) %>% 
+        mutate_at("sector", 
+                  ~recode(.,
+                          "agl"='Agriculture livestock', 
+                          'ags'='Agriculture soils',
+                          'awb' = 'Agriculture waste burning',
+                          'ene' = 'Power generation',
+                          'fef' = 'Fugitives',
+                          'ind' = 'Industry',
+                          'res' = 'Residential, commercial, and other combustion',
+                          'shp' = 'Ships',
+                          'slv' = 'Solvents',
+                          'sum' = 'All sources',
+                          'swd' = 'Solid waste and wastewater',
+                          'tnr' = 'Off-road transportation',
+                          'tro' = 'Road transportation'))
+      
+      
+    } 
+    else if(input$indicator %in%  c("Greenhouse gas emissions")){
+      
+      table_plot_years = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        pivot_longer(
+          cols = bc_agl_2000_co2e:nmvoc_tro_2020_co2e,
+          names_to = c("gas", "sector","year","unit"),
+          names_pattern = "(.*)_(.*)_(.*)_(.*)",
+          values_to = "value") %>% 
+        dplyr::select(geo_name,
+                      gas,
+                      sector, 
+                      year,
+                      value) %>% 
+        arrange(desc(value)) %>% 
+        mutate_at("gas", 
+                  ~recode(.,
+                          "bc"='Black carbon', 
+                          'ch4'='Methane',
+                          'co' = 'Carbon monoxide',
+                          'co2' = 'Carbon dioxide',
+                          'nox' = 'Nitrogen oxides',
+                          'so2' = 'Sulfur dioxide',
+                          'oc' = 'Organic carbon',
+                          'nh3' = 'Ammonia',
+                          'nmvoc' = 'Non-methane volatile organic compounds')) %>% 
+        mutate_at("sector", 
+                  ~recode(.,
+                          "agl"='Agriculture livestock', 
+                          'ags'='Agriculture soils',
+                          'awb' = 'Agriculture waste burning',
+                          'ene' = 'Power generation',
+                          'fef' = 'Fugitives',
+                          'ind' = 'Industry',
+                          'res' = 'Residential, commercial, and other combustion',
+                          'shp' = 'Ships',
+                          'slv' = 'Solvents',
+                          'sum' = 'All sources',
+                          'swd' = 'Solid waste and wastewater',
+                          'tnr' = 'Off-road transportation',
+                          'tro' = 'Road transportation'))
+      
+      table_plot = table_plot_years %>% 
+        dplyr::select("Sector" = "sector",
+                      "Gas" = "gas",
+                      "Year" = "year",
+                      "Emissions (tonnes of CO2 equivalent)" = "value")
+    } 
+    # main indicators
+    else {
       table_plot = unit_indicators %>% 
         drop_na(selected_indicator_name, geo_name) %>% 
         as.data.frame() %>%
@@ -1832,21 +2859,29 @@ server <- function(input, output, session) {
         distinct(geo_name, .keep_all = T) %>% 
         arrange(desc(selected_indicator_name)) 
       
+      # remove empty city name
+      table_plot$geo_name[table_plot$geo_name==""]<-NA
+      table_plot = table_plot %>% 
+        drop_na(geo_name)
+      
       selected_indicator_legend_table = str_remove(selected_indicator_legend, "<br> ")
-      # names(table_plot) = c("City name",selected_indicator_legend_table)
       names(table_plot) = c("Name",selected_indicator_legend_table)
     }
     
     
-    
     # plot table
     
+    table_color = "Greens"
     
     output$indicator_table <- DT::renderDataTable(
-      if(input$indicator %in% c("Change in greenhouse gas emissions")){
+      if(input$indicator %in% c("Change in greenhouse gas emissions",
+                                "High pollution days",
+                                "Greenhouse gas emissions",
+                                "Air pollutant emissions")){
         DT::datatable(table_plot,
                       options = list(pageLength = 10,order = list(list(2, 'desc')))) 
-      } else {
+      } 
+      else {
         DT::datatable(table_plot, 
                       options = list(pageLength = 10,
                                      order = list(list(2, 'desc')))) %>% formatStyle(
@@ -1854,32 +2889,34 @@ server <- function(input, output, session) {
                                        backgroundColor = styleInterval(seq(from = min(table_plot[,selected_indicator_legend_table]),
                                                                            to = max(table_plot[,selected_indicator_legend_table]),
                                                                            length.out = 8), 
-                                                                       brewer.pal(9, "Greens")
+                                                                       brewer.pal(9, table_color)
                                        ),
                                        fontWeight = 'bold')
       }
     )
     
-    
     # output data to download
     output$downloadData <- downloadHandler(
       filename = function() {
-        paste(input$city,"-", input$indicator,"-", Sys.Date(), ".csv", sep="")
+        paste(input$city,
+              "-", 
+              input$indicator,
+              ".csv", 
+              sep="")
       },
       content = function(file) {
         write.csv(table_plot,
                   file,
-                  row.names=FALSE,
-                  fileEncoding = "latin1")
+                  row.names=FALSE)
       }
     )
-    
-    
-    
     
     #########################################
     ### Chart ----
     
+    chart_color = "#2A553E"
+    
+    # urbanshift indicators
     if(input$indicator %in% c("Change in greenhouse gas emissions")){
       
       table_plot_2000 = table_plot_years %>% 
@@ -1938,20 +2975,159 @@ server <- function(input, output, session) {
       fig <- subplot(fig_2000, fig_2020, shareY = TRUE, margin = 0.05) %>% 
         layout(legend=list(title=list(text='<b> Gases </b>')),
                annotations = annotations)
-    } else {
+    }
+    # c4f indicators
+    else if(input$indicator == "High pollution days"){
+      fig = plot_ly(x = c("Nitrogen dioxide",
+                          "Sulfur dioxide",
+                          "Ozone",
+                          "Fine particulate matter",
+                          "Coarse particulate matter",
+                          "Carbon monoxide"),
+                    y = as.numeric(table_plot[1, c(2,3,4,5,6,7)]),
+                    type = "bar",
+                    orientation = "v",
+                    # name = names(table_plot)[2],
+                    color = I("green4")) %>% 
+        layout(yaxis = list(title = "Annual number of days air pollutants <br> are above WHO air quality standards"),
+               xaxis = list(title = 'Air pollutants',categoryorder = "total descending"))
+      
+      
+    } 
+    else if(input$indicator == "Air pollutant emissions"){
+      
+      table_plot_2000 = table_plot %>% 
+        filter(year == 2000)
+      
+      table_plot_2020 = table_plot %>% 
+        filter(year == 2020)
+      
+      fig_2000 <- plot_ly(table_plot_2000, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year) %>% 
+        layout(yaxis = list(title = 'Social cost ($USD)'), 
+               xaxis = list(title = 'sectors',categoryorder = "total descending"),
+               barmode = 'stack')
+      
+      fig_2020 <- plot_ly(table_plot_2020, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year,
+                          showlegend = FALSE) %>% 
+        layout(yaxis = list(title = 'Social cost ($USD)'), 
+               xaxis = list(title = 'sectors',categoryorder = "total descending"),
+               barmode = 'stack')
+      
+      annotations = list( 
+        list( 
+          x = 0.2,  
+          y = 1.0,  
+          text = "2000",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ),  
+        list( 
+          x = 0.8,  
+          y = 1,  
+          text = "2020",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ))
+      
+      fig <- subplot(fig_2000, fig_2020, shareY = TRUE, margin = 0.05) %>% 
+        layout(legend=list(title=list(text='<b> Pollutants </b>')),
+               annotations = annotations)
+      
+      
+    } 
+    else if(input$indicator == "Greenhouse gas emissions"){
+      
+      table_plot_2000 = table_plot_years %>% 
+        filter(year == 2000)
+      
+      table_plot_2020 = table_plot_years %>% 
+        filter(year == 2020)
+      
+      fig_2000 <- plot_ly(table_plot_2000, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year) %>% 
+        layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
+               xaxis = list(title = 'sectors',categoryorder = "total descending"),
+               barmode = 'stack')
+      
+      
+      fig_2020 <- plot_ly(table_plot_2020, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year,
+                          showlegend = FALSE) %>% 
+        layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
+               xaxis = list(title = 'sectors',categoryorder = "total descending"),
+               barmode = 'stack')
+      
+      annotations = list( 
+        list( 
+          x = 0.2,  
+          y = 1.0,  
+          text = "2000",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ),  
+        list( 
+          x = 0.8,  
+          y = 1,  
+          text = "2020",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ))
+      
+      fig <- subplot(fig_2000, fig_2020, shareY = TRUE, margin = 0.05) %>% 
+        layout(legend=list(title=list(text='<b> Gases </b>')),
+               annotations = annotations)
+      
+      
+    }
+    # main indicators
+    else {
       fig = plot_ly(x = table_plot$`Name`,
-                    # x = table_plot$`City name`,
                     y = table_plot[[colnames(table_plot)[2]]],
                     type = "bar",
                     orientation = "v",
                     name = names(table_plot)[2],
-                    # color = I("green4"),
-                    color = I("#2A553E")) %>% 
+                    color = I(chart_color)) %>% 
         layout(yaxis = list(title = selected_indicator_legend),
-               xaxis = list(categoryorder = "total descending"))
+               xaxis = list(categoryorder = "total descending",
+                            tickangle=45))
       
-      fig
+      
     }
+    
     
     output$indicator_chart <- renderPlotly({
       fig
@@ -1973,7 +3149,7 @@ server <- function(input, output, session) {
     # change names
     names(indicators_comparison) = c("City name",selected_indicator_label)
     
-    city_num = which(indicators_comparison$`City name` == geo_name)
+    city_num = which(indicators_comparison$`City name` == selected_city)
     city_color = rep("#A0D1B4",nrow(indicators_comparison)) #, "grey"
     city_color[city_num] = "#2A553E" #"green"
     
@@ -2014,10 +3190,11 @@ server <- function(input, output, session) {
       
     })
     
+    
     # benchmark data to download
     output$downloadDataBenchmark <- downloadHandler(
       filename = function() {
-        paste("Benchmark-", input$indicator,"-", Sys.Date(), ".csv", sep="")
+        paste("Benchmark-", input$indicator,".csv", sep="")
       },
       content = function(file) {
         write.csv(indicators_comparison,
@@ -2027,7 +3204,6 @@ server <- function(input, output, session) {
       }
     )
     
-
     
     #########################################
     ### Indicator definition text  ----
@@ -2069,8 +3245,14 @@ server <- function(input, output, session) {
       )
     })
     
+    
+    session$onSessionEnded(function() {
+      stopApp()
+    })
+    
+    
+    
   })
-  
   
 }
 

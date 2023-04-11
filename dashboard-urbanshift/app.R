@@ -169,7 +169,8 @@ boundary_georef = read.csv(paste(aws_s3_path,
                            fileEncoding="UTF-8-BOM")
 
 boundary_georef = boundary_georef %>% 
-  filter(project_name == selected_project)
+  filter(project_name == selected_project) 
+
 
 # # by project
 # boundary_georef = read.csv(paste(aws_s3_path,
@@ -180,9 +181,11 @@ boundary_georef = boundary_georef %>%
 #                            fileEncoding="UTF-8-BOM")
 
 cities = boundary_georef %>% 
-  # filter(project_name == selected_project) %>% 
-  pull(geo_name)
-# cities = unique(boundary_georef$geo_name)
+  # mutate(geo_name = recode(geo_name,
+  #                          "SLE-Freetown" = "SLE-Freetown_city")) %>% 
+  pull(geo_name) 
+
+
 
 
 # list cities without available tml data and related indicators
@@ -226,6 +229,8 @@ indicators_AQ1_aoi = indicators_AQ1 %>%
   rename_at(1,~"city_id") %>% 
   filter(city_id %in% city_id_c4f) %>% 
   add_column(geo_parent_name = geo_name_c4f) %>%
+  mutate(geo_parent_name = recode(geo_parent_name,
+                                  "SLE-Freetown" = "SLE-Freetown_city")) %>% 
   dplyr::select(geo_parent_name,
                 GRE_2_1_air_pollution =  total_change_2020) %>%
   mutate(GRE_2_1_air_pollution = 100 * GRE_2_1_air_pollution)
@@ -350,10 +355,12 @@ indicators = indicators %>%
 
 ############### get cities comparison list ----------------
 
+
 indicators_comparison = indicators %>% 
   filter(geo_id %in% boundary_georef$city_id)
 
 
+print(indicators_comparison)
 
 # label indicator map function -----
 
@@ -3627,10 +3634,13 @@ server <- function(input, output, session) {
     
     indicators_comparison = indicators_comparison %>% 
       as.data.frame() %>%
-      dplyr::select(geo_name,selected_indicator_name) %>% 
+      dplyr::select(geo_name,selected_indicator_name) %>%
       drop_na(selected_indicator_name, geo_name) %>% 
+      mutate(geo_name = recode(geo_name,
+                               "SLE-Freetown_city" = "SLE-Freetown")) %>% 
       mutate_if(is.numeric, round, 2) %>% 
       arrange(desc(selected_indicator_name)) 
+    
     
     # change names
     names(indicators_comparison) = c("City name",selected_indicator_label)

@@ -36,7 +36,7 @@ selected_project = "urbanshift"
 
 if(selected_project == "urbanshift"){
   default_city = "BRA-Belem"
-  logo_file = "logo_urbanshift.png"
+  logo_file = "logo.png"
   logo_height = "30px"
   default_theme = "Biodiversity"
   default_indicator = "Natural Areas"

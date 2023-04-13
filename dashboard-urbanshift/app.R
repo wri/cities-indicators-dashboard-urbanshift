@@ -389,7 +389,7 @@ pal.indicator.fun = function(selected_indicator_values){
 ui = tagList(
   useShinyjs(),
   navbarPage(title = div("Indicators Dashboard",
-                         img(src = logo_file,
+                         img(src = "logo_urbanshift.png",
                              height = logo_height,
                              style = "top: -3px;
                                     right: -900px;padding-right:100px;")),

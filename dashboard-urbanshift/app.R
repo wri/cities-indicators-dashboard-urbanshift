@@ -327,10 +327,11 @@ pal.indicator.fun = function(selected_indicator_values){
 ui = tagList(
   useShinyjs(),
   navbarPage(title = div("Indicators Dashboard",
-                         img(src = logo_file,
-                             height = logo_height,
-                             style = "top: -3px;
-                                    right: -900px;padding-right:100px;")),
+                         # img(src = logo_file,
+                         #     height = logo_height,
+                         #     style = "top: -3px;
+                         #            right: -900px;padding-right:100px;")
+                         ),
              id = "active_tab",
              
              ### Indicators tab ----
@@ -380,20 +381,6 @@ ui = tagList(
                                          style="color: #242456;"),
                                htmlOutput("city_wide_indicator"),
                                
-                               img(src = "www/logo.png",
-                                   height = logo_height,
-                                   style = "top: -3px;
-                                    right: -900px;padding-right:100px;"),
-                               
-                               img(src = "logo_urbanshift.png",
-                                   height = logo_height,
-                                   style = "top: -3px;
-                                    right: -900px;padding-right:100px;"),
-                               
-                               img(src = "logo_c4f.png",
-                                   height = logo_height,
-                                   style = "top: -3px;
-                                    right: -900px;padding-right:100px;"),
                                
                                
                         ),

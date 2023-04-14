@@ -90,11 +90,6 @@ aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
 
 ############### Load data: indicator definition
 
-# read indicator definition all projects------------
-
-indicators_definitions = read.csv(paste(aws_s3_path,
-                                        "indicators/definitions.csv",
-                                        sep = ""))
 
 # read indicator definition ------------
 

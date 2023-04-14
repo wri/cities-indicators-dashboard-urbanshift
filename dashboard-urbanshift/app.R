@@ -380,6 +380,21 @@ ui = tagList(
                                          style="color: #242456;"),
                                htmlOutput("city_wide_indicator"),
                                
+                               img(src = "www/logo.png",
+                                   height = logo_height,
+                                   style = "top: -3px;
+                                    right: -900px;padding-right:100px;"),
+                               
+                               img(src = "logo_urbanshift.png",
+                                   height = logo_height,
+                                   style = "top: -3px;
+                                    right: -900px;padding-right:100px;"),
+                               
+                               img(src = "logo_c4f.png",
+                                   height = logo_height,
+                                   style = "top: -3px;
+                                    right: -900px;padding-right:100px;"),
+                               
                                
                         ),
                         ### Specify plots ----  

@@ -31,8 +31,7 @@ RUN R -e 'install.packages(c(\
         "leafem",\
         "RColorBrewer",\
         "shinydisconnect",\
-        "shinyjs",\
-		"shinycssloaders",\
+        "shinyjs",\"shinycssloaders",\
         "leaflet.multiopacity"\
     ),\
     repos="https://packagemanager.rstudio.com/cran/__linux__/focal/2022-09-02"\

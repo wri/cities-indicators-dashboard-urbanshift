@@ -21,7 +21,7 @@ library(shinydisconnect)
 library(shinyjs)
 
 
-#library(shinycssloaders)
+library(shinycssloaders)
 
 # library(leaflet.multiopacity)
 
@@ -410,10 +410,10 @@ ui = tagList(
                                 id = "tabs",
                                 ### Map plot
                                 tabPanel("Map", 
-                                         # withSpinner(leafletOutput("indicator_map", 
-                                         #               height = 500)),
-                                         leafletOutput("indicator_map", 
-                                                       height = 500),
+                                         shinycssloaders::withSpinner(leafletOutput("indicator_map",
+                                                                                    height = 500)),
+                                         # leafletOutput("indicator_map", 
+                                         #               height = 500),
                                          # disconnect message
                                          disconnectMessage(
                                            text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",

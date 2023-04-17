@@ -28,11 +28,10 @@ RUN R -e 'install.packages(c(\
         "raster",\
         "data.table",\
         "DT",\
-        "leafem",\
+        "shinycssloaders",\
         "RColorBrewer",\
         "shinydisconnect",\
         "shinyjs",\
-		"shinycssloaders",\
         "leaflet.multiopacity"\
     ),\
     repos="https://packagemanager.rstudio.com/cran/__linux__/focal/2022-09-02"\

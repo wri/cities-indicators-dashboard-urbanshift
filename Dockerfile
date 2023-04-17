@@ -10,30 +10,30 @@ RUN apt-get update && apt-get install -y \
     libproj-dev \
     libgdal-dev
 
-RUN R -e 'install.packages(c(\
-        "shiny",\
-        "plotly",\
-        "leaflet",\
-        "leaflet.extras",\
-        "plyr",\
-        "dplyr",\
-        "rgdal",\
-        "shinyWidgets",\
-        "rnaturalearth",\
-        "tidyverse",\
-        "sf",\
-        "rgeos",\
-        "httr",\
-        "jsonlite",\
-        "raster",\
-        "data.table",\
-        "DT",\
-        "leafem",\
-        "RColorBrewer",\
-		"shinycssloaders",\
-        "shinydisconnect",\
-        "shinyjs",\
-        "leaflet.multiopacity"\
+RUN R -e 'install.packages(c(
+        "shiny",
+        "plotly",
+        "leaflet",
+        "leaflet.extras",
+        "plyr",
+        "dplyr",
+        "rgdal",
+        "shinyWidgets",
+        "rnaturalearth",
+        "tidyverse",
+        "sf",
+        "rgeos",
+        "httr",
+        "jsonlite",
+        "raster",
+        "data.table",
+        "DT",
+        "leafem",
+        "RColorBrewer",
+        "shinydisconnect",
+        "shinyjs",
+		"shinycssloaders",
+        "leaflet.multiopacity"
     ),\
     repos="https://packagemanager.rstudio.com/cran/__linux__/focal/2022-09-02"\
 )'

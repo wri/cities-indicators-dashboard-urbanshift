@@ -39,7 +39,7 @@ if(selected_project == "urbanshift"){
   # default_theme = "Greenspace access"
   # default_indicator = "Recreational space per capita"
   # default_city = "BRA-Belem"
-  logo_file = "logo.png"
+  logo_file = "logo_urbanshift.png"
   logo_height = "30px"
   default_theme = "Land protection and restoration"
   default_indicator = "Permeable areas"
@@ -90,6 +90,11 @@ aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
 
 ############### Load data: indicator definition
 
+# read indicator definition all projects------------
+
+# indicators_definitions = read.csv(paste(aws_s3_path,
+#                                         "indicators/definitions.csv",
+#                                         sep = ""))
 
 # read indicator definition ------------
 
@@ -326,110 +331,129 @@ ui = tagList(
                          #     height = logo_height,
                          #     style = "top: -3px;
                          #            right: -900px;padding-right:100px;")
-                         ),
-             id = "active_tab",
+                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png",
+                             height = "15px",
+                             style = "top: -3px;
+                                    right: -900px;padding-right:10px;"),
+                         
+                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png",
+                             # src = "https://raw.githubusercontent.com/wri/cities-indicators-dashboard-urbanshift/main/dashboard-urbanshift/www/logo_urbanshift.png",
+                             height = "30px",
+                             style = "top: -3px;
+                                    right: -100px;padding-right:10px;")
+  ),
+  id = "active_tab",
+  
+  ### Indicators tab ----
+  tabPanel("Indicators",
+           
+           ### Filters ----
+           fluidRow(
              
-             ### Indicators tab ----
-             tabPanel("Indicators",
-                      
-                      ### Filters ----
-                      fluidRow(
-                        
-                        column(3,
-                               
-                               ### Select the project  ----
-                               selectInput(inputId = "project",
-                                           label = tags$span(style="color: #242456;","Select project"),
-                                           choices = c("urbanshift",'cities4forests'),
-                                           selected = selected_project,
-                                           width = '100%'),
-                               
-                               ### Select city  ----
-                               selectInput(inputId = "city",
-                                           label = tags$span(style="color: #242456;","Select your city"),
-                                           choices = cities,
-                                           # choices = NULL,
-                                           selected = default_city,
-                                           width = '100%'),
-                               
-                               # select theme ----
-                               selectizeInput(inputId = "theme",
-                                              label = tags$span(style="color: #242456;","Theme"),
-                                              # choices =  NULL,
-                                              choices = indicators_themes,
-                                              selected = default_theme,
-                                              multiple = FALSE,
-                                              width = '100%'),
-                               
-                               # select indicator ----
-                               selectizeInput(inputId = "indicator",
-                                              label = tags$span(style="color: #242456;","Select indicator"),
-                                              # choices =  NULL,
-                                              choices = indicators_list,
-                                              selected = default_indicator,
-                                              multiple = FALSE,
-                                              width = '100%'),
-                               
-                               # Main indicators
-                               
-                               tags$span(h4("City wide level: "),
-                                         style="color: #242456;"),
-                               htmlOutput("city_wide_indicator"),
-                               
-                               
-                               
-                        ),
-                        ### Specify plots ----  
-                        column(8,
-                               div(style = "background-color: red; width: 100%; height: 100%;"),
-                               tabsetPanel(type = "tabs",
-                                           id = "tabs",
-                                           ### Map plot
-                                           tabPanel("Map", 
-                                                    # withSpinner(leafletOutput("indicator_map", 
-                                                    #               height = 500)),
-                                                    leafletOutput("indicator_map", 
-                                                                  height = 500),
-                                                    # disconnect message
-                                                    disconnectMessage(
-                                                      text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
-                                                      refresh = "Refresh",
-                                                      background = "#FFFFFF",
-                                                      colour = "#077D29",
-                                                      refreshColour = "#337AB7",
-                                                      overlayColour = "#000000",
-                                                      overlayOpacity = 0.6,
-                                                      width = 450,
-                                                      top = 50,
-                                                      size = 22),
-                                                    # download geo data
-                                                    downloadButton(outputId = "download_geo_data",
-                                                                   label = "Download geospatial data"),
-                                                    # # download geo data
-                                                    # downloadButton(outputId = "download_map",
-                                                    #                label = "Download map")
-                                           ),
-                                           ### Table plot
-                                           tabPanel("Table", DT::dataTableOutput("indicator_table"),
-                                                    downloadButton(outputId = "downloadData",
-                                                                   label = "Download tabular data")),
-                                           ### barchart 
-                                           tabPanel("Chart", 
-                                                    plotlyOutput("indicator_chart",
-                                                                 height = 500)),
-                                           
-                                           ## Cities comparison
-                                           tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
-                                                                              height = 500),
-                                                    downloadButton(outputId = "downloadDataBenchmark",
-                                                                   label = "Download benchmark data")),
-                                           ### Data description
-                                           tabPanel("Definitions", htmlOutput("indicator_definition", 
-                                                                              height = 500))
-                               )
-                        )
-                      )
+             column(3,
+                    
+                    ### Select the project  ----
+                    selectInput(inputId = "project",
+                                label = tags$span(style="color: #242456;","Select project"),
+                                choices = c("urbanshift",'cities4forests'),
+                                selected = selected_project,
+                                width = '100%'),
+                    
+                    ### Select city  ----
+                    selectInput(inputId = "city",
+                                label = tags$span(style="color: #242456;","Select your city"),
+                                choices = cities,
+                                # choices = NULL,
+                                selected = default_city,
+                                width = '100%'),
+                    
+                    # select theme ----
+                    selectizeInput(inputId = "theme",
+                                   label = tags$span(style="color: #242456;","Theme"),
+                                   # choices =  NULL,
+                                   choices = indicators_themes,
+                                   selected = default_theme,
+                                   multiple = FALSE,
+                                   width = '100%'),
+                    
+                    # select indicator ----
+                    selectizeInput(inputId = "indicator",
+                                   label = tags$span(style="color: #242456;","Select indicator"),
+                                   # choices =  NULL,
+                                   choices = indicators_list,
+                                   selected = default_indicator,
+                                   multiple = FALSE,
+                                   width = '100%'),
+                    
+                    # Main indicators
+                    
+                    tags$span(h4("City wide level: "),
+                              style="color: #242456;"),
+                    htmlOutput("city_wide_indicator"),
+                    
+                    # img(src = "logo_c4f.png",
+                    #     height = "15px",
+                    #     style = "top: -3px;
+                    #      right: -900px;padding-right:100px;"),
+                    # 
+                    # img(src = "logo_urbanshift.png",
+                    #     height = "30px",
+                    #     style = "top: -3px;
+                    #      right: -900px;padding-right:100px;")
+                    
+                    
+             ),
+             ### Specify plots ----  
+             column(8,
+                    div(style = "background-color: red; width: 100%; height: 100%;"),
+                    tabsetPanel(type = "tabs",
+                                id = "tabs",
+                                ### Map plot
+                                tabPanel("Map", 
+                                         # withSpinner(leafletOutput("indicator_map", 
+                                         #               height = 500)),
+                                         leafletOutput("indicator_map", 
+                                                       height = 500),
+                                         # disconnect message
+                                         disconnectMessage(
+                                           text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
+                                           refresh = "Refresh",
+                                           background = "#FFFFFF",
+                                           colour = "#077D29",
+                                           refreshColour = "#337AB7",
+                                           overlayColour = "#000000",
+                                           overlayOpacity = 0.6,
+                                           width = 450,
+                                           top = 50,
+                                           size = 22),
+                                         # download geo data
+                                         downloadButton(outputId = "download_geo_data",
+                                                        label = "Download geospatial data"),
+                                         # # download geo data
+                                         # downloadButton(outputId = "download_map",
+                                         #                label = "Download map")
+                                ),
+                                ### Table plot
+                                tabPanel("Table", DT::dataTableOutput("indicator_table"),
+                                         downloadButton(outputId = "downloadData",
+                                                        label = "Download tabular data")),
+                                ### barchart 
+                                tabPanel("Chart", 
+                                         plotlyOutput("indicator_chart",
+                                                      height = 500)),
+                                
+                                ## Cities comparison
+                                tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
+                                                                   height = 500),
+                                         downloadButton(outputId = "downloadDataBenchmark",
+                                                        label = "Download benchmark data")),
+                                ### Data description
+                                tabPanel("Definitions", htmlOutput("indicator_definition", 
+                                                                   height = 500))
+                    )
              )
+           )
+  )
   )
 )
 
@@ -1652,7 +1676,12 @@ server <- function(input, output, session) {
     }
     
     # BIO-4: Vascular plant species ----
-    if(input$indicator  %in% c("Vascular plant species")){
+    if(input$indicator  %in% c("Vascular plant species") & !input$city %in% c("ETH-Addis_Ababa",
+                                                                              "ETH-Dire_Dawa",
+                                                                              "COD-Bukavu",
+                                                                              "COD-Uvira",
+                                                                              "IDN-Bitung",
+                                                                              "RWA-Musanze")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Tracheophyta$lat,
@@ -1687,7 +1716,11 @@ server <- function(input, output, session) {
     }
     
     # BIO-5: Bird species ----
-    if(input$indicator  %in% c("Bird species")){
+    if(input$indicator  %in% c("Bird species")  & !input$city %in% c("CHN-Ningbo",
+                                                                     "COD-Bukavu",
+                                                                     "COD-Uvira",
+                                                                     "ETH-Dire_Dawa",
+                                                                     "IDN-Palembang")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Aves$lat,
@@ -1722,7 +1755,9 @@ server <- function(input, output, session) {
     }
     
     # BIO-6: Arthropod species ----
-    if(input$indicator  %in% c("Arthropod species")){
+    if(input$indicator  %in% c("Arthropod species") & !input$city %in% c("COD-Bukavu",
+                                                                         "COD-Uvira",
+                                                                         "ETH-Dire_Dawa")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Arthropod$lat,
@@ -2183,7 +2218,12 @@ server <- function(input, output, session) {
                                                                       "IND-Pune",
                                                                       "IND-Surat",
                                                                       "MAR-Marrakech",
-                                                                      "RWA-Kigali")){
+                                                                      "RWA-Kigali",
+                                                                      "COD-Bukavu",
+                                                                      "RWA-Musanze",
+                                                                      "ETH-Addis_Ababa",
+                                                                      "COL-Barranquilla",
+                                                                      "MDG-Antananarivo")){
       m = m %>% 
         # plot layer: OSM 
         addPolygons(data = wdpa,
@@ -2223,7 +2263,8 @@ server <- function(input, output, session) {
                                                                                            "IND-Pune",
                                                                                            "IND-Surat",
                                                                                            "MAR-Marrakech",
-                                                                                           "RWA-Kigali")){
+                                                                                           "RWA-Kigali",
+                                                                                           "ETH-Addis_Ababa")){
       m = m %>% 
         # plot layer: WDPA 
         addPolygons(data = wdpa,
@@ -3503,17 +3544,25 @@ server <- function(input, output, session) {
       filter(indicator_label == selected_indicator_label) %>% 
       pull(indicator_definition)
     
+    print(indicator_def_text)
+    
     indicator_data_sources = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(data_sources)
+    
+    print(indicator_data_sources)
     
     indicator_importance = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(importance)
     
+    print(indicator_importance)
+    
     indicator_methods = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(methods)
+    
+    print(indicator_methods)
     
     # plot text 
     output$indicator_definition <- renderText({
@@ -3535,6 +3584,7 @@ server <- function(input, output, session) {
             "<font weight=50; color=\"#242456\"><b>", indicator_methods
       )
     })
+    
     
     
     session$onSessionEnded(function() {

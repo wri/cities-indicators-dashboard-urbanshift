@@ -15,7 +15,7 @@ library(jsonlite)
 library(raster)
 library(data.table)
 library(DT)
-# library(leafem)
+library(leafem)
 library(RColorBrewer)
 library(shinydisconnect)
 library(shinyjs)
@@ -299,7 +299,6 @@ indicators_comparison = indicators %>%
   filter(geo_id %in% boundary_georef$city_id)
 
 
-print(indicators_comparison)
 
 # label indicator map function -----
 
@@ -357,6 +356,7 @@ ui = tagList(
                                 label = tags$span(style="color: #242456;","Select project"),
                                 choices = c("urbanshift",'cities4forests'),
                                 selected = selected_project,
+                                multiple = TRUE,
                                 width = '100%'),
                     
                     ### Select city  ----
@@ -391,15 +391,6 @@ ui = tagList(
                               style="color: #242456;"),
                     htmlOutput("city_wide_indicator"),
                     
-                    # img(src = "logo_c4f.png",
-                    #     height = "15px",
-                    #     style = "top: -3px;
-                    #      right: -900px;padding-right:100px;"),
-                    # 
-                    # img(src = "logo_urbanshift.png",
-                    #     height = "30px",
-                    #     style = "top: -3px;
-                    #      right: -900px;padding-right:100px;")
                     
                     
              ),
@@ -472,8 +463,8 @@ server <- function(input, output, session) {
   observeEvent(input$project,{
     updateSelectInput(session,
                       'city',
-                      choices=unique(boundary_georef[boundary_georef$project_name==input$project, "geo_name"]),
-                      selected = unique(boundary_georef[boundary_georef$project_name==input$project, "geo_name"])[6]
+                      choices=unique(boundary_georef[boundary_georef$project_name %in% input$project, "geo_name"]),
+                      selected = unique(boundary_georef[boundary_georef$project_name %in% input$project, "geo_name"])[6]
     )
     
   })
@@ -3201,25 +3192,31 @@ server <- function(input, output, session) {
     
     table_color = "Greens"
     
+    
+    
     output$indicator_table <- DT::renderDataTable(
       if(input$indicator %in% c("Change in greenhouse gas emissions",
                                 "High pollution days",
                                 "Greenhouse gas emissions",
                                 "Air pollutant emissions")){
         DT::datatable(table_plot,
-                      options = list(pageLength = 10,order = list(list(2, 'desc')))) 
+                      rownames = FALSE,
+                      options = list(pageLength = 10,
+                                     order = list(list(1, 'desc')))) 
       } 
       else {
         DT::datatable(table_plot, 
+                      rownames = FALSE,
                       options = list(pageLength = 10,
-                                     order = list(list(2, 'desc')))) %>% formatStyle(
-                                       selected_indicator_legend_table,
-                                       backgroundColor = styleInterval(seq(from = min(table_plot[,selected_indicator_legend_table]),
-                                                                           to = max(table_plot[,selected_indicator_legend_table]),
-                                                                           length.out = 8), 
-                                                                       brewer.pal(9, table_color)
-                                       ),
-                                       fontWeight = 'bold')
+                                     order = list(list(1, 'desc')))) %>% 
+          formatStyle(
+            selected_indicator_legend_table,
+            backgroundColor = styleInterval(seq(from = min(table_plot[,selected_indicator_legend_table]),
+                                                to = max(table_plot[,selected_indicator_legend_table]),
+                                                length.out = 8), 
+                                            brewer.pal(9, table_color)
+            ),
+            fontWeight = 'bold')
       }
     )
     
@@ -3467,16 +3464,21 @@ server <- function(input, output, session) {
     
     # cities comparison ----
     
+    project_cities = boundary_georef %>% 
+      filter(project_name %in% input$project) %>% 
+      pull(geo_name)
+    
+    
     indicators_comparison = indicators_comparison %>% 
       as.data.frame() %>%
       dplyr::select(geo_name,selected_indicator_name) %>%
       drop_na(selected_indicator_name, geo_name) %>% 
       mutate(geo_name = recode(geo_name,
                                "SLE-Freetown_city" = "SLE-Freetown")) %>% 
+      filter(geo_name %in% project_cities) %>%
       mutate_if(is.numeric, round, 2) %>% 
       arrange(desc(selected_indicator_name)) 
     
-    print(indicators_comparison)
     
     # change names
     names(indicators_comparison) = c("City name",selected_indicator_label)

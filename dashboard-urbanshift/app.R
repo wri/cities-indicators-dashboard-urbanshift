@@ -15,7 +15,7 @@ library(jsonlite)
 library(raster)
 library(data.table)
 library(DT)
-# library(leafem)
+
 library(RColorBrewer)
 library(shinydisconnect)
 library(shinyjs)
@@ -133,7 +133,7 @@ cities = boundary_georef %>%
 
 # list cities without available tml data and related indicators
 cities_no_tml_data = c("BRA-Salvador","MEX-Monterrey",
-                       "ARG-Mendoza", "ARG-Mer_del_plata", "ARG-Ushiaia", 
+                       "ARG-Mendoza", "ARG-Mer_del_plata", "ARG-Ushuaia", 
                        "ARG-Buenos_Aires", "BRA-Florianopolis", "CHN-Chengdu", 
                        "CHN-Chongqing", "CHN-Ningbo")
 
@@ -149,7 +149,8 @@ indicators = read.csv(paste(aws_s3_path,
 
 # read AQ1 indicator -----
 
-data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-1-emissionschange2000to2020.csv"
+# data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-1-emissionschange2000to2020.csv"
+data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-1-emissionschange2000to2020_new.csv"
 
 
 indicators_AQ1 = read.csv(data_path)
@@ -172,7 +173,7 @@ indicators_AQ1_aoi = indicators_AQ1 %>%
   #               GRE_2_1_air_pollution =  total_change_2020) %>%
   # mutate(GRE_2_1_air_pollution = 100 * GRE_2_1_air_pollution) %>%
   dplyr::select(geo_parent_name,
-                AQ_1_airPollution =  total_change_2020) %>%
+                AQ_1_airPollution =  total_change_relative_usd) %>%
   mutate(AQ_1_airPollution = 100 * AQ_1_airPollution)
 
 indicators = indicators %>%
@@ -182,7 +183,7 @@ indicators = indicators %>%
 
 indicators_AQ1_unit = indicators_AQ1 %>%
   dplyr::select(c(1, 194:385)) %>%
-  rename(geo_id = "Unnamed..0")
+  rename(geo_id = "X")
 
 indicators = indicators %>%
   left_join(indicators_AQ1_unit,
@@ -325,125 +326,145 @@ pal.indicator.fun = function(selected_indicator_values){
 
 ui = tagList(
   useShinyjs(),
-  navbarPage(title = div("Indicators Dashboard",
-                         # img(src = logo_file,
-                         #     height = logo_height,
-                         #     style = "top: -3px;
-                         #            right: -900px;padding-right:100px;")
-                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png",
-                             height = "15px",
-                             style = "top: -3px;
-                                    right: -900px;padding-right:10px;"),
+  navbarPage(title = div("Cities Indicators",
+                         # img(href= "https://cities4forests.com/",
+                         #     src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png",
+                         #     height = "15px",
+                         #     style = "top: -3px;right: -900px;padding-right:10px;"),
+                         tags$a(
+                           href="https://cities4forests.com/", 
+                           tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png", 
+                                    # title="Example Image Link", 
+                                    # style = "top: -3px;right: -900px;padding-right:10px;"),
+                                    height="15p")
+                         ),
                          
-                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png",
-                             # src = "https://raw.githubusercontent.com/wri/cities-indicators-dashboard-urbanshift/main/dashboard-urbanshift/www/logo_urbanshift.png",
-                             height = "30px",
-                             style = "top: -3px;
-                                    right: -100px;padding-right:10px;")
+                         # img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png",
+                         #     height = "30px",
+                         #     style = "top: -3px;
+                         #            right: -100px;padding-right:10px;"),
+                         
+                         tags$a(
+                           href="https://www.shiftcities.org/", 
+                           tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
+                                    # title="Example Image Link", 
+                                    # style = "top: -3px;right: -900px;padding-right:10px;"),
+                                    height="30px")
+                         ),
   ),
+  
+  tags$style(HTML(".navbar-header { width:100% }
+                   .navbar-brand {width:100%;text-align: center;font-size: 30px;height: 25px;}")),
+  windowTitle="Cities Indicators",
   id = "active_tab",
   
-  ### Indicators tab ----
-  tabPanel("Indicators",
+  ### Filters ----
+  fluidRow(
+    
+    column(3,
            
-           ### Filters ----
-           fluidRow(
-             
-             column(3,
-                    
-                    ### Select the project  ----
-                    selectInput(inputId = "project",
-                                label = tags$span(style="color: #242456;","Select project"),
-                                choices = c("urbanshift",'cities4forests'),
-                                selected = selected_project,
-                                multiple = TRUE,
-                                width = '100%'),
-                    
-                    ### Select city  ----
-                    selectInput(inputId = "city",
-                                label = tags$span(style="color: #242456;","Select your city"),
-                                choices = cities,
-                                # choices = NULL,
-                                selected = default_city,
-                                width = '100%'),
-                    
-                    # select theme ----
-                    selectizeInput(inputId = "theme",
-                                   label = tags$span(style="color: #242456;","Theme"),
-                                   # choices =  NULL,
-                                   choices = indicators_themes,
-                                   selected = default_theme,
-                                   multiple = FALSE,
-                                   width = '100%'),
-                    
-                    # select indicator ----
-                    selectizeInput(inputId = "indicator",
-                                   label = tags$span(style="color: #242456;","Select indicator"),
-                                   # choices =  NULL,
-                                   choices = indicators_list,
-                                   selected = default_indicator,
-                                   multiple = FALSE,
-                                   width = '100%'),
-                    
-                    # Main indicators
-                    
-                    tags$span(h4("City wide level: "),
-                              style="color: #242456;"),
-                    htmlOutput("city_wide_indicator"),
-                    
-                    
-                    
-             ),
-             ### Specify plots ----  
-             column(8,
-                    div(style = "background-color: red; width: 100%; height: 100%;"),
-                    tabsetPanel(type = "tabs",
-                                id = "tabs",
-                                ### Map plot
-                                tabPanel("Map", 
-                                         shinycssloaders::withSpinner(leafletOutput("indicator_map",
-                                                                                    height = 500)),
-                                         # leafletOutput("indicator_map", 
-                                         #               height = 500),
-                                         # disconnect message
-                                         disconnectMessage(
-                                           text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
-                                           refresh = "Refresh",
-                                           background = "#FFFFFF",
-                                           colour = "#077D29",
-                                           refreshColour = "#337AB7",
-                                           overlayColour = "#000000",
-                                           overlayOpacity = 0.6,
-                                           width = 450,
-                                           top = 50,
-                                           size = 22),
-                                         # download geo data
-                                         downloadButton(outputId = "download_geo_data",
-                                                        label = "Download geospatial data"),
-                                         # # download geo data
-                                         # downloadButton(outputId = "download_map",
-                                         #                label = "Download map")
-                                ),
-                                ### Table plot
-                                tabPanel("Table", DT::dataTableOutput("indicator_table"),
-                                         downloadButton(outputId = "downloadData",
-                                                        label = "Download tabular data")),
-                                ### barchart 
-                                tabPanel("Chart", 
-                                         plotlyOutput("indicator_chart",
-                                                      height = 500)),
-                                
-                                ## Cities comparison
-                                tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
-                                                                   height = 500),
-                                         downloadButton(outputId = "downloadDataBenchmark",
-                                                        label = "Download benchmark data")),
-                                ### Data description
-                                tabPanel("Definitions", htmlOutput("indicator_definition", 
-                                                                   height = 500))
-                    )
-             )
+           ### Select the project  ----
+           selectInput(inputId = "project",
+                       label = tags$span(style="color: #242456;","City group"),
+                       choices = c("urbanshift",'cities4forests'),
+                       selected = selected_project,
+                       multiple = TRUE,
+                       width = '100%'),
+           
+           ### Select city  ----
+           selectInput(inputId = "city",
+                       label = tags$span(style="color: #242456;","City"),
+                       choices = cities,
+                       # choices = NULL,
+                       selected = default_city,
+                       width = '100%'),
+           
+           # select theme ----
+           selectizeInput(inputId = "theme",
+                          label = tags$span(style="color: #242456;","Theme"),
+                          # choices =  NULL,
+                          choices = indicators_themes,
+                          selected = default_theme,
+                          multiple = FALSE,
+                          width = '100%'),
+           
+           # select indicator ----
+           selectizeInput(inputId = "indicator",
+                          label = tags$span(style="color: #242456;","Indicator"),
+                          # choices =  NULL,
+                          choices = indicators_list,
+                          selected = default_indicator,
+                          multiple = FALSE,
+                          width = '100%'),
+           
+           # Main indicators
+           
+           tags$span(h4("City wide indicator value: "),
+                     style="color: #242456;"),
+           htmlOutput("city_wide_indicator"),
+           
+           
+           
+    ),
+    ### Specify plots ----  
+    column(8,
+           div(style = "background-color: red; width: 100%; height: 100%;"),
+           tabsetPanel(type = "tabs",
+                       id = "tabs",
+                       ### Map plot
+                       tabPanel("Map", 
+                                shinycssloaders::withSpinner(leafletOutput("indicator_map",
+                                                                           height = 500)),
+                                # leafletOutput("indicator_map", 
+                                #               height = 500),
+                                # disconnect message
+                                disconnectMessage(
+                                  text = "We are sorry! An error occurred. Please refresh the page and try again with another city or indicator.",
+                                  refresh = "Refresh",
+                                  background = "#FFFFFF",
+                                  colour = "#077D29",
+                                  refreshColour = "#337AB7",
+                                  overlayColour = "#000000",
+                                  overlayOpacity = 0.6,
+                                  width = 450,
+                                  top = 50,
+                                  size = 22),
+                                # download geo data
+                                downloadButton(outputId = "download_geo_data",
+                                               label = "Download geospatial data"),
+                                textOutput("boundary_disclaimer"),
+                                tags$head(tags$style("#boundary_disclaimer{color: grey;
+                                                    font-size: 10px;
+                                                    font-style: italic;}")),
+                                # # download geo data
+                                # downloadButton(outputId = "download_map",
+                                #                label = "Download map")
+                       ),
+                       ### Table plot
+                       tabPanel("Table", DT::dataTableOutput("indicator_table"),
+                                downloadButton(outputId = "downloadData",
+                                               label = "Download tabular data")),
+                       ### barchart 
+                       tabPanel("Chart", 
+                                plotlyOutput("indicator_chart",
+                                             height = 500)),
+                       
+                       ## Cities comparison
+                       tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
+                                                          height = 500),
+                                downloadButton(outputId = "downloadDataBenchmark",
+                                               label = "Download benchmark data")),
+                       ### Data description
+                       tabPanel("Definitions", 
+                                htmlOutput("indicator_definition", height = 500),
+                                # tags$a(href="www.rstudio.com", "Click here!",),
+                                h1(),
+                                h5("For additional details on methods and limitations see the ", 
+                                   a("technical note.", 
+                                     href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
+                       
            )
+    )
   )
   )
 )
@@ -1489,6 +1510,7 @@ server <- function(input, output, session) {
     ########################
     # map indicator ----
     ########################
+    
     
     # indicator layer ----
     m = leaflet(boundary_aoi) %>%
@@ -2851,6 +2873,13 @@ server <- function(input, output, session) {
       }
     )
     
+    
+    #########################################
+    # output boundary disclaimer
+    output$boundary_disclaimer <- renderText({
+      "Disclaimer: This map is for illustrative purposes and does not imply the expression of any opinion on the part of the United Nations concerning the legal status of any country or territory or concerning the delimitation of frontiers or borders. Nor do the boundaries and names shown and the designations used on this map imply official endorsement or acceptance by the United Nations"
+    })
+    
     # download map view -----
     
     # https://stackoverflow.com/questions/48685818/save-leaflet-map-in-shiny-with-user-selected-layers
@@ -3084,11 +3113,14 @@ server <- function(input, output, session) {
           names_to = c("gas", "sector","year","unit"),
           names_pattern = "(.*)_(.*)_(.*)_(.*)",
           values_to = "value") %>% 
-        dplyr::select(geo_id,
-                      gas,
-                      sector, 
-                      year,
-                      value) %>% 
+        mutate(across(where(is.numeric), round, 1)) %>%
+        dplyr::select(
+          # geo_id,
+          gas,
+          sector, 
+          year,
+          value
+        ) %>% 
         mutate_at("gas", 
                   ~recode(.,
                           "bc"='Black carbon', 
@@ -3128,6 +3160,7 @@ server <- function(input, output, session) {
           names_to = c("gas", "sector","year","unit"),
           names_pattern = "(.*)_(.*)_(.*)_(.*)",
           values_to = "value") %>% 
+        mutate(across(where(is.numeric), round, 1)) %>%
         dplyr::select(geo_name,
                       gas,
                       sector, 
@@ -3202,7 +3235,7 @@ server <- function(input, output, session) {
         DT::datatable(table_plot,
                       rownames = FALSE,
                       options = list(pageLength = 10,
-                                     order = list(list(1, 'desc')))) 
+                                     order = list(list(3, 'desc')))) 
       } 
       else {
         DT::datatable(table_plot, 
@@ -3546,25 +3579,20 @@ server <- function(input, output, session) {
       filter(indicator_label == selected_indicator_label) %>% 
       pull(indicator_definition)
     
-    print(indicator_def_text)
-    
     indicator_data_sources = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(data_sources)
     
-    print(indicator_data_sources)
     
     indicator_importance = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(importance)
     
-    print(indicator_importance)
     
     indicator_methods = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(methods)
     
-    print(indicator_methods)
     
     # plot text 
     output$indicator_definition <- renderText({

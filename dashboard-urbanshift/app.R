@@ -126,6 +126,7 @@ boundary_georef = read.csv(paste(aws_s3_path,
 
 
 cities = boundary_georef %>% 
+  arrange(country_name,city_name) %>% 
   pull(geo_name) 
 
 
@@ -313,13 +314,31 @@ pal.indicator.fun = function(selected_indicator_values){
                                  domain = selected_indicator_values,
                                  na.color = "gray",
                                  revers = FALSE)
+    
+    data_availability_msg = "Data is not yet available for the selected city!"
   } else {
     pal_indicator<- colorNumeric(palette = "Greens",
                                  domain = selected_indicator_values,
                                  na.color = "gray",
                                  revers = FALSE)
+    data_availability_msg = " yes"
   }
   return(pal_indicator)
+}
+
+
+data.availability.fun = function(selected_indicator_values){
+  if(sum(is.na(selected_indicator_values)) == length(selected_indicator_values))
+  {
+    print("NOT available")
+    selected_indicator_values = 0
+    
+    data_availability_msg = "Data is not yet available for the selected city!"
+  } else {
+    
+    data_availability_msg = ""
+  }
+  return(data_availability_msg)
 }
 
 ############### App
@@ -396,12 +415,31 @@ ui = tagList(
                           selected = default_indicator,
                           multiple = FALSE,
                           width = '100%'),
+           # br(),
+           # Main indicators "<font color=\"#242456\"><b>"
+           # tags$span(style="<font color=\"#242456\"><b>","City wide indicator value:"),
+           HTML("<b>"),
+           # tags$span(h4("City wide indicator value: "),
+           #           style="color: #242456;font-style:bold"),
+           tags$span("City wide indicator value: ",
+                     style="color: #242456;font-style:bold"),
+           br(),
            
-           # Main indicators
+           HTML("<b>"),
            
-           tags$span(h4("City wide indicator value: "),
-                     style="color: #242456;"),
            htmlOutput("city_wide_indicator"),
+           
+           
+           br(),
+           br(),
+           
+           # # how to use the dashboard
+           # actionButton("show",
+           #              "?",
+           #              # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+           #              # class = "btn-warning",
+           #              icon("question")),
+           
            
            
            
@@ -463,6 +501,36 @@ ui = tagList(
                                    a("technical note.", 
                                      href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
                        
+                       ### Data description
+                       
+                       # font size=3px; weight=100; color=\"#2A553E\
+                       tabPanel("About", 
+                                h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
+                                h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
+                                h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
+                                h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
+                                h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
+                                   a("technical note.", 
+                                     href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
+                                h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
+                                   a("Creative Commons CC BY 4.0", 
+                                     href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
+                                h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
+                                h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
+                                   a("environmental data platforms Terms of Service", 
+                                     href = "https://www.globalforestwatch.org/terms/")),
+                                h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
+                                actionButton(inputId = "email", 
+                                             icon = icon("envelope", lib = "font-awesome"), 
+                                             a("Contact Us", 
+                                               href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
+                                             # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                             style="length:40px")
+                       ),
+                       
            )
     )
   )
@@ -479,6 +547,43 @@ server <- function(input, output, session) {
   observeEvent(input$disconnect, {
     session$close()
   })
+  
+  # modeal dialog message
+  
+  # observeEvent(input$show, {
+  # 
+  #   text_1 = tags$span("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities",
+  #                       style = "font-size: 15px;")
+  # 
+  #   text_2 = tags$span("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators.",
+  #                       style = "font-size: 15px;")
+  # 
+  #   text_3 = tags$span("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map.",
+  #                      style = "font-size: 15px;")
+  # 
+  #   text_4 = tags$span("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab.",
+  #                      style = "font-size: 15px;")
+  # 
+  #   text_5 = tags$span("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ",
+  #                      style = "font-size: 15px;")
+  # 
+  #   text_6 = tags$a("technical note.",
+  #     href="https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment",
+  #     style = "font-size: 15px;"
+  #   )
+  #   showModal(modalDialog(
+  #     title = "Dashboard Overview",
+  #     # tagList(text_1, br(), text_2),
+  #     renderUI(HTML(paste(paste(text_1,
+  #                         text_2,
+  #                         text_3,
+  #                         text_4,
+  #                         text_5,
+  #                         sep = '<br/>'),text_6, sep = ""))),
+  #     easyClose = TRUE,
+  #     footer = NULL
+  #   ))})
+  
   
   # Update cities based on selected project
   observeEvent(input$project,{
@@ -589,7 +694,7 @@ server <- function(input, output, session) {
                                  sep = "")
     )
     
-    print(head(boundary_aoi))
+    # print(head(boundary_aoi))
     
     boundary_unit = st_read(paste(aws_s3_path,
                                   "data/boundaries/boundary-",
@@ -607,13 +712,13 @@ server <- function(input, output, session) {
       left_join(indicators, by = "geo_id")
     
     
-    print(head(aoi_indicators))
+    # print(head(aoi_indicators))
     
     unit_indicators = boundary_unit %>%
       dplyr::select(geo_id) %>%
       left_join(indicators, by = "geo_id")
     
-    print(head(unit_indicators))
+    # print(head(unit_indicators))
     
     # get selected indicator
     
@@ -2980,6 +3085,7 @@ server <- function(input, output, session) {
       
     } 
     
+    data_availability_msg = data.availability.fun(selected_indicator_values)
     
     # output text
     output$city_wide_indicator <- renderText({
@@ -2987,7 +3093,9 @@ server <- function(input, output, session) {
             city_wide_indicator_value, 
             city_wide_indicator_value_unit,"<br>",
             "<font size=2px; weight=500; color=\"#168A06\"><b>",
-            selected_indicator_legend)
+            selected_indicator_legend,
+            "<font size=2px; weight=500; color=\"#FF0000\"><b>","<br>",
+            data_availability_msg)
     })
     
     

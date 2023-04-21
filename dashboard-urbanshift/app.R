@@ -304,7 +304,7 @@ indicators_comparison = indicators %>%
 
 # label indicator map function -----
 
-pal.indicator.fun = function(selected_indicator_values){
+pal.indicator.fun = function(selected_indicator_values, indicator_color_map){
   if(sum(is.na(selected_indicator_values)) == length(selected_indicator_values))
   {
     print("NOT available")
@@ -315,25 +315,32 @@ pal.indicator.fun = function(selected_indicator_values){
                                  na.color = "gray",
                                  revers = FALSE)
     
-    data_availability_msg = "Data is not yet available for the selected city!"
+    
   } else {
-    pal_indicator<- colorNumeric(palette = "Greens",
+    pal_indicator<- colorNumeric(palette = indicator_color_map,
                                  domain = selected_indicator_values,
                                  na.color = "gray",
                                  revers = FALSE)
-    data_availability_msg = " yes"
+    
   }
   return(pal_indicator)
 }
 
 
-data.availability.fun = function(selected_indicator_values){
+data.availability.fun = function(selected_indicator_values, indicator_name){
   if(sum(is.na(selected_indicator_values)) == length(selected_indicator_values))
   {
-    print("NOT available")
-    selected_indicator_values = 0
+    if(indicator_name %in% c("Extreme heat hazard",
+                             "Extreme precepitation hazard")){
+      data_availability_msg = ""
+    } else {
+      print("NOT available")
+      selected_indicator_values = 0
+      
+      data_availability_msg = "Data is not yet available for the selected city!"
+    }
     
-    data_availability_msg = "Data is not yet available for the selected city!"
+    
   } else {
     
     data_availability_msg = ""
@@ -744,7 +751,25 @@ server <- function(input, output, session) {
     
     # indicator color values ----
     
-    pal_indicator = pal.indicator.fun(selected_indicator_values)
+    indicator_color = "Greens"
+    # if(input$indicator %in% c("Exposure to coastal and river flooding"))
+    # {
+    #   
+    #   indicator_color = "Greens" #"Blues"
+    #   
+    # } else if (input$indicator %in% c("Extreme heat hazard",
+    #                                   "Land surface temperature",
+    #                                   "Exposure to PM 2.5")) {
+    #   
+    #   indicator_color = "Greens" #"YlOrRd"
+    # } else if (input$indicator %in% c("Surface reflectivity",
+    #                                   "Built land without tree cover",
+    #                                   )) {
+    #   
+    #   indicator_color = "Greens" #"Greys"
+    # }
+    
+    pal_indicator = pal.indicator.fun(selected_indicator_values, indicator_color_map = indicator_color)
     
     # indicator labels for map ----
     
@@ -1611,6 +1636,8 @@ server <- function(input, output, session) {
                                     reverse = FALSE)
       
     }
+    
+    
     
     ########################
     # map indicator ----
@@ -2658,10 +2685,10 @@ server <- function(input, output, session) {
       addRasterImage(city_pop_boundary,
                      colors = pal_pop ,
                      opacity = 0.9,
-                     group = "Population",
+                     group = "Population density (persons per hectare, WorldPop)",
                      project=FALSE,
                      maxBytes = 8 * 1024 * 1024,
-                     layerId = "Population") %>% 
+                     layerId = "Population density (persons per hectare, WorldPop)") %>% 
         # Legend for population 
         addLegend(pal = pal_pop ,
                   values = pop_values,
@@ -3085,7 +3112,7 @@ server <- function(input, output, session) {
       
     } 
     
-    data_availability_msg = data.availability.fun(selected_indicator_values)
+    data_availability_msg = data.availability.fun(selected_indicator_values, indicator_name = input$indicator)
     
     # output text
     output$city_wide_indicator <- renderText({

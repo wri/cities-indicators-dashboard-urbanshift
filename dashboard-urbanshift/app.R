@@ -425,7 +425,7 @@ ui = tagList(
                      style="color: #242456;font-style:bold"),
            br(),
            
-           HTML("<b>"),
+           HTML("</b>"),
            
            htmlOutput("city_wide_indicator"),
            
@@ -479,17 +479,17 @@ ui = tagList(
                                 #                label = "Download map")
                        ),
                        ### Table plot
-                       tabPanel("Table", DT::dataTableOutput("indicator_table"),
+                       tabPanel("Table", shinycssloaders::withSpinner(DT::dataTableOutput("indicator_table")),
                                 downloadButton(outputId = "downloadData",
                                                label = "Download tabular data")),
                        ### barchart 
                        tabPanel("Chart", 
-                                plotlyOutput("indicator_chart",
-                                             height = 500)),
+                                shinycssloaders::withSpinner(plotlyOutput("indicator_chart",
+                                                                          height = 500))),
                        
                        ## Cities comparison
-                       tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
-                                                          height = 500),
+                       tabPanel("Benchmark", shinycssloaders::withSpinner(plotlyOutput("cities_comparison_plot",
+                                                                                       height = 500)),
                                 downloadButton(outputId = "downloadDataBenchmark",
                                                label = "Download benchmark data")),
                        ### Data description

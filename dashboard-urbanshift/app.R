@@ -1580,7 +1580,8 @@ server <- function(input, output, session) {
                               "Vegetation cover in riparian areas",
                               "Vulnerable steep slopes")){
       
-      ndvi_data_path = paste(aws_s3_path,
+      ndvi_data_path = paste("/vsicurl/",
+                             aws_s3_path,
                              "data/vegetation/sentinel-2/",
                              selected_city,
                              "-",

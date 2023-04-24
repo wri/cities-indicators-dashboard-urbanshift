@@ -35,7 +35,7 @@ selected_project = "urbanshift"
 # selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
-  default_city = "BRA-Teresina" #"BRA-Teresina"
+  default_city = "BRA-Teresina"
   # default_theme = "Greenspace access"
   # default_indicator = "Recreational space per capita"
   # default_city = "BRA-Belem"
@@ -513,34 +513,34 @@ ui = tagList(
                                               href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
                                 
                                 
-                                # font size=3px; weight=100; color=\"#2A553E\
-                                tabPanel("About", 
-                                         h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
-                                         h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
-                                         h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
-                                         h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
-                                         h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
-                                            a("technical note.", 
-                                              href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
-                                         h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                         h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
-                                            a("Creative Commons CC BY 4.0", 
-                                              href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
-                                         h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
-                                         h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                         h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
-                                            a("environmental data platforms Terms of Service", 
-                                              href = "https://www.globalforestwatch.org/terms/")),
-                                         h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                         h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
-                                         actionButton(inputId = "email", 
-                                                      icon = icon("envelope", lib = "font-awesome"), 
-                                                      a("Contact Us", 
-                                                        href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
-                                                      # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                                      style="length:40px")
-                                ),
-                                
+                                # # font size=3px; weight=100; color=\"#2A553E\
+                                # tabPanel("About", 
+                                #          h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
+                                #          h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
+                                #          h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
+                                #          h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
+                                #          h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
+                                #             a("technical note.", 
+                                #               href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
+                                #          h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                #          h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
+                                #             a("Creative Commons CC BY 4.0", 
+                                #               href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
+                                #          h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
+                                #          h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                #          h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
+                                #             a("environmental data platforms Terms of Service", 
+                                #               href = "https://www.globalforestwatch.org/terms/")),
+                                #          h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                #          h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
+                                #          actionButton(inputId = "email", 
+                                #                       icon = icon("envelope", lib = "font-awesome"), 
+                                #                       a("Contact Us", 
+                                #                         href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
+                                #                       # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                #                       style="length:40px")
+                                # ),
+                                # 
                     )
              )
            ),

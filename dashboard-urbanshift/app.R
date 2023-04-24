@@ -31,8 +31,8 @@ library(shinycssloaders)
 
 # define project
 
-# selected_project = "urbanshift"
-selected_project = "cities4forests"
+selected_project = "urbanshift"
+# selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
   default_city = "BRA-Teresina"

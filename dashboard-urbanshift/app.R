@@ -35,7 +35,7 @@ selected_project = "urbanshift"
 # selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
-  default_city = "BRA-Teresina"
+  default_city = "BRA-Teresina" #"BRA-Teresina"
   # default_theme = "Greenspace access"
   # default_indicator = "Recreational space per capita"
   # default_city = "BRA-Belem"
@@ -331,7 +331,8 @@ data.availability.fun = function(selected_indicator_values, indicator_name){
   if(sum(is.na(selected_indicator_values)) == length(selected_indicator_values))
   {
     if(indicator_name %in% c("Extreme heat hazard",
-                             "Extreme precepitation hazard")){
+                             "Extreme precepitation hazard",
+                             "Bird species")){
       data_availability_msg = ""
     } else {
       print("NOT available")
@@ -374,179 +375,214 @@ ui = tagList(
                            href="https://www.shiftcities.org/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
                                     # title="Example Image Link", 
-                                    # style = "top: -3px;right: -900px;padding-right:10px;"),
+                                    style = "top: -3px;right: -900px;padding-right:40px;",
                                     height="30px")
                          ),
   ),
   
-  tags$style(HTML(".navbar-header { width:100% }
-                   .navbar-brand {width:100%;text-align: center;font-size: 30px;height: 25px;}")),
+  # tags$style(HTML(".navbar-header { width:100% }
+  #                  .navbar-brand {width:100%;text-align: center;font-size: 30px;height: 25px;}")),
   windowTitle="Cities Indicators",
   id = "active_tab",
   
-  ### Filters ----
-  fluidRow(
-    
-    column(3,
+  ### Indicators tab ----
+  tabPanel("Indicators",
            
-           ### Select the project  ----
-           selectInput(inputId = "project",
-                       label = tags$span(style="color: #242456;","City group"),
-                       choices = c("urbanshift",'cities4forests'),
-                       selected = selected_project,
-                       multiple = TRUE,
-                       width = '100%'),
-           
-           ### Select city  ----
-           selectInput(inputId = "city",
-                       label = tags$span(style="color: #242456;","City"),
-                       choices = cities,
-                       # choices = NULL,
-                       selected = default_city,
-                       width = '100%'),
-           
-           # select theme ----
-           selectizeInput(inputId = "theme",
-                          label = tags$span(style="color: #242456;","Theme"),
-                          # choices =  NULL,
-                          choices = indicators_themes,
-                          selected = default_theme,
-                          multiple = FALSE,
-                          width = '100%'),
-           
-           # select indicator ----
-           selectizeInput(inputId = "indicator",
-                          label = tags$span(style="color: #242456;","Indicator"),
-                          # choices =  NULL,
-                          choices = indicators_list,
-                          selected = default_indicator,
-                          multiple = FALSE,
-                          width = '100%'),
-           # br(),
-           # Main indicators "<font color=\"#242456\"><b>"
-           # tags$span(style="<font color=\"#242456\"><b>","City wide indicator value:"),
-           HTML("<b>"),
-           # tags$span(h4("City wide indicator value: "),
-           #           style="color: #242456;font-style:bold"),
-           tags$span("City wide indicator value: ",
-                     style="color: #242456;font-style:bold"),
-           br(),
-           
-           HTML("</b>"),
-           
-           htmlOutput("city_wide_indicator"),
-           
-           
-           br(),
-           br(),
-           
-           # # how to use the dashboard
-           # actionButton("show",
-           #              "?",
-           #              # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-           #              # class = "btn-warning",
-           #              icon("question")),
-           
-           
-           
-           
-    ),
-    ### Specify plots ----  
-    column(8,
-           div(style = "background-color: red; width: 100%; height: 100%;"),
-           tabsetPanel(type = "tabs",
-                       id = "tabs",
-                       ### Map plot
-                       tabPanel("Map", 
-                                shinycssloaders::withSpinner(leafletOutput("indicator_map",
-                                                                           height = 500)),
-                                # leafletOutput("indicator_map", 
-                                #               height = 500),
-                                # disconnect message
-                                disconnectMessage(
-                                  text = "We are sorry! An error occurred. Please refresh the page and try again with another city or indicator.",
-                                  refresh = "Refresh",
-                                  background = "#FFFFFF",
-                                  colour = "#077D29",
-                                  refreshColour = "#337AB7",
-                                  overlayColour = "#000000",
-                                  overlayOpacity = 0.6,
-                                  width = 450,
-                                  top = 50,
-                                  size = 22),
-                                # download geo data
-                                downloadButton(outputId = "download_geo_data",
-                                               label = "Download geospatial data"),
-                                textOutput("boundary_disclaimer"),
-                                tags$head(tags$style("#boundary_disclaimer{color: grey;
+           ### Filters ----
+           fluidRow(
+             
+             column(3,
+                    
+                    ### Select the project  ----
+                    selectInput(inputId = "project",
+                                label = tags$span(style="color: #242456;","City group"),
+                                choices = c("urbanshift",'cities4forests'),
+                                selected = selected_project,
+                                multiple = TRUE,
+                                width = '100%'),
+                    
+                    ### Select city  ----
+                    selectInput(inputId = "city",
+                                label = tags$span(style="color: #242456;","City"),
+                                choices = cities,
+                                # choices = NULL,
+                                selected = default_city,
+                                width = '100%'),
+                    
+                    # select theme ----
+                    selectizeInput(inputId = "theme",
+                                   label = tags$span(style="color: #242456;","Theme"),
+                                   # choices =  NULL,
+                                   choices = indicators_themes,
+                                   selected = default_theme,
+                                   multiple = FALSE,
+                                   width = '100%'),
+                    
+                    # select indicator ----
+                    selectizeInput(inputId = "indicator",
+                                   label = tags$span(style="color: #242456;","Indicator"),
+                                   # choices =  NULL,
+                                   choices = indicators_list,
+                                   selected = default_indicator,
+                                   multiple = FALSE,
+                                   width = '100%'),
+                    # br(),
+                    # Main indicators "<font color=\"#242456\"><b>"
+                    # tags$span(style="<font color=\"#242456\"><b>","City wide indicator value:"),
+                    HTML("<b>"),
+                    # tags$span(h4("City wide indicator value: "),
+                    #           style="color: #242456;font-style:bold"),
+                    tags$span("City wide indicator value: ",
+                              style="color: #242456;font-style:bold"),
+                    br(),
+                    
+                    HTML("</b>"),
+                    
+                    htmlOutput("city_wide_indicator"),
+                    
+                    
+                    br(),
+                    br(),
+                    
+                    # # how to use the dashboard
+                    # actionButton("show",
+                    #              "?",
+                    #              # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                    #              # class = "btn-warning",
+                    #              icon("question")),
+                    
+                    
+                    
+                    
+             ),
+             ### Specify plots ----  
+             column(8,
+                    div(style = "background-color: red; width: 100%; height: 100%;"),
+                    tabsetPanel(type = "tabs",
+                                id = "tabs",
+                                ### Map plot
+                                tabPanel("Map", 
+                                         shinycssloaders::withSpinner(leafletOutput("indicator_map",
+                                                                                    height = 500)),
+                                         # leafletOutput("indicator_map", 
+                                         #               height = 500),
+                                         # disconnect message
+                                         disconnectMessage(
+                                           text = "We are sorry! An error occurred. Please refresh the page and try again with another city or indicator.",
+                                           refresh = "Refresh",
+                                           background = "#FFFFFF",
+                                           colour = "#077D29",
+                                           refreshColour = "#337AB7",
+                                           overlayColour = "#000000",
+                                           overlayOpacity = 0.6,
+                                           width = 450,
+                                           top = 50,
+                                           size = 22),
+                                         # download geo data
+                                         downloadButton(outputId = "download_geo_data",
+                                                        label = "Download geospatial data"),
+                                         textOutput("boundary_disclaimer"),
+                                         tags$head(tags$style("#boundary_disclaimer{color: grey;
                                                     font-size: 10px;
                                                     font-style: italic;}")),
-                                # # download geo data
-                                # downloadButton(outputId = "download_map",
-                                #                label = "Download map")
-                       ),
-                       ### Table plot
-                       tabPanel("Table", shinycssloaders::withSpinner(DT::dataTableOutput("indicator_table")),
-                                downloadButton(outputId = "downloadData",
-                                               label = "Download tabular data")),
-                       ### barchart 
-                       tabPanel("Chart", 
-                                shinycssloaders::withSpinner(plotlyOutput("indicator_chart",
-                                                                          height = 500))),
-                       
-                       ## Cities comparison
-                       tabPanel("Benchmark", shinycssloaders::withSpinner(plotlyOutput("cities_comparison_plot",
-                                                                                       height = 500)),
-                                downloadButton(outputId = "downloadDataBenchmark",
-                                               label = "Download benchmark data")),
-                       ### Data description
-                       tabPanel("Definitions", 
-                                htmlOutput("indicator_definition", height = 500),
-                                # tags$a(href="www.rstudio.com", "Click here!",),
-                                h1(),
-                                h5("For additional details on methods and limitations see the ", 
-                                   a("technical note.", 
-                                     href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
-                       
-                       ### Data description
-                       
-                       # font size=3px; weight=100; color=\"#2A553E\
-                       tabPanel("About", 
-                                h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
-                                h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
-                                h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
-                                h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
-                                h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
-                                   a("technical note.", 
-                                     href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
-                                h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
-                                   a("Creative Commons CC BY 4.0", 
-                                     href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
-                                h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
-                                h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
-                                   a("environmental data platforms Terms of Service", 
-                                     href = "https://www.globalforestwatch.org/terms/")),
-                                h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
-                                actionButton(inputId = "email", 
-                                             icon = icon("envelope", lib = "font-awesome"), 
-                                             a("Contact Us", 
-                                               href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
-                                             # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                             style="length:40px")
-                       ),
-                       
-           )
-    )
-  )
+                                         # # download geo data
+                                         # downloadButton(outputId = "download_map",
+                                         #                label = "Download map")
+                                ),
+                                ### Table plot
+                                tabPanel("Table", shinycssloaders::withSpinner(DT::dataTableOutput("indicator_table")),
+                                         downloadButton(outputId = "downloadData",
+                                                        label = "Download tabular data")),
+                                ### barchart 
+                                tabPanel("Chart", 
+                                         shinycssloaders::withSpinner(plotlyOutput("indicator_chart",
+                                                                                   height = 500))),
+                                
+                                ## Cities comparison
+                                tabPanel("Benchmark", shinycssloaders::withSpinner(plotlyOutput("cities_comparison_plot",
+                                                                                                height = 500)),
+                                         downloadButton(outputId = "downloadDataBenchmark",
+                                                        label = "Download benchmark data")),
+                                ### Data description
+                                tabPanel("Definitions", 
+                                         htmlOutput("indicator_definition", height = 500),
+                                         # tags$a(href="www.rstudio.com", "Click here!",),
+                                         h1(),
+                                         h5("For additional details on methods and limitations see the ", 
+                                            a("technical note.", 
+                                              href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
+                                
+                                
+                                # font size=3px; weight=100; color=\"#2A553E\
+                                tabPanel("About", 
+                                         h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
+                                         h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
+                                         h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
+                                         h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
+                                         h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
+                                            a("technical note.", 
+                                              href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
+                                         h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                         h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
+                                            a("Creative Commons CC BY 4.0", 
+                                              href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
+                                         h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
+                                         h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                         h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
+                                            a("environmental data platforms Terms of Service", 
+                                              href = "https://www.globalforestwatch.org/terms/")),
+                                         h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+                                         h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
+                                         actionButton(inputId = "email", 
+                                                      icon = icon("envelope", lib = "font-awesome"), 
+                                                      a("Contact Us", 
+                                                        href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
+                                                      # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                      style="length:40px")
+                                ),
+                                
+                    )
+             )
+           ),
+           
+           
+           
+  ),
+  ### Indicators tab ----
+  tabPanel("About",
+           h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
+           h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
+           h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
+           h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
+           h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
+              a("technical note.", 
+                href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
+           h5("Boundary Disclaimer ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+           h5("Disclaimer: This map is for illustrative purposes and does not imply the expression of any opinion concerning the legal status of any country or territory or concerning the delimitation of frontiers or borders. 
+              Nor do the boundaries and names shown and the designations used on this map imply official endorsement or acceptance by the United Nations"),
+           h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+           h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
+              a("Creative Commons CC BY 4.0", 
+                href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
+           h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
+           h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+           h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
+              a("environmental data platforms Terms of Service", 
+                href = "https://www.globalforestwatch.org/terms/")),
+           h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
+           h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
+           actionButton(inputId = "email", 
+                        icon = icon("envelope", lib = "font-awesome"), 
+                        a("Contact Us", 
+                          href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
+                        # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                        style="length:40px")),
   )
 )
 
 
-
-# Define server
+#######################
+# Define server ----
 server <- function(input, output, session) {
   
   
@@ -1580,8 +1616,7 @@ server <- function(input, output, session) {
                               "Vegetation cover in riparian areas",
                               "Vulnerable steep slopes")){
       
-      ndvi_data_path = paste("/vsicurl/",
-                             aws_s3_path,
+      ndvi_data_path = paste(aws_s3_path,
                              "data/vegetation/sentinel-2/",
                              selected_city,
                              "-",
@@ -3010,7 +3045,7 @@ server <- function(input, output, session) {
     #########################################
     # output boundary disclaimer
     output$boundary_disclaimer <- renderText({
-      "Disclaimer: This map is for illustrative purposes and does not imply the expression of any opinion on the part of the United Nations concerning the legal status of any country or territory or concerning the delimitation of frontiers or borders. Nor do the boundaries and names shown and the designations used on this map imply official endorsement or acceptance by the United Nations"
+      "Disclaimer: This map is for illustrative purposes and does not imply the expression of any opinion concerning the legal status of any country or territory or concerning the delimitation of frontiers or borders. Nor do the boundaries and names shown and the designations used on this map imply official endorsement or acceptance by the United Nations"
     })
     
     # download map view -----

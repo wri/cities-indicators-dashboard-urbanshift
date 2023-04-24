@@ -31,8 +31,8 @@ library(shinycssloaders)
 
 # define project
 
-selected_project = "urbanshift"
-# selected_project = "cities4forests"
+# selected_project = "urbanshift"
+selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
   default_city = "BRA-Teresina"
@@ -126,7 +126,7 @@ boundary_georef = read.csv(paste(aws_s3_path,
 
 
 cities = boundary_georef %>% 
-  arrange(country_name,city_name) %>% 
+  arrange(country_code,city_name) %>% 
   pull(geo_name) 
 
 
@@ -385,6 +385,12 @@ ui = tagList(
   windowTitle="Cities Indicators",
   id = "active_tab",
   
+  # # google analytics
+  # tags$head(includeHTML(("google-analytics.html"))),
+  # 
+  # # hotjar
+  # tags$head(includeScript(paste0(getwd(), "/www/hotjar.js"))),
+  
   ### Indicators tab ----
   tabPanel("Indicators",
            
@@ -632,7 +638,7 @@ server <- function(input, output, session) {
   observeEvent(input$project,{
     updateSelectInput(session,
                       'city',
-                      choices=unique(boundary_georef[boundary_georef$project_name %in% input$project, "geo_name"]),
+                      choices=sort(unique(boundary_georef[boundary_georef$project_name %in% input$project, "geo_name"])),
                       selected = unique(boundary_georef[boundary_georef$project_name %in% input$project, "geo_name"])[6]
     )
     

@@ -31,8 +31,8 @@ library(shinycssloaders)
 
 # define project
 
-# selected_project = "urbanshift"
-selected_project = "cities4forests"
+selected_project = "urbanshift"
+# selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
   default_city = "BRA-Teresina"
@@ -384,7 +384,7 @@ ui = tagList(
                            href="https://www.shiftcities.org/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
                                     # title="Example Image Link", 
-                                    style = "top: -3px;right: -900px;padding-right:30px;",
+                                    style = "top: -3px;right: -900px;padding-right:40px;",
                                     height="30px")
                          ),
   ),
@@ -487,7 +487,7 @@ ui = tagList(
                                          #               height = 500),
                                          # disconnect message
                                          disconnectMessage(
-                                           text = "We are sorry! An error occurred. Please refresh the page and try again with another city or indicator.",
+                                           text = "We are sorry! An error occurred. Please refresh the page!",
                                            refresh = "Refresh",
                                            background = "#FFFFFF",
                                            colour = "#077D29",

@@ -31,30 +31,16 @@ library(shinycssloaders)
 
 # define project
 
-selected_project = "urbanshift"
-# selected_project = "cities4forests"
+# selected_project = "urbanshift"
+selected_project = "cities4forests"
 
 if(selected_project == "urbanshift"){
   default_city = "BRA-Teresina"
-  # default_theme = "Greenspace access"
-  # default_indicator = "Recreational space per capita"
-  # default_city = "BRA-Belem"
   logo_file = "logo_urbanshift.png"
   logo_height = "30px"
   default_theme = "Land protection and restoration"
   default_indicator = "Permeable areas"
-  # indicators_labels_project = c(
-  #   # Biodiversity
-  #   "Natural Areas","Connectivity of natural lands","Biodiversity in built-up areas (birds)",
-  #   "Vascular plant species","Bird species","Arthropod species",
-  #   # Land protection and restoration
-  #   "Permeable areas","Tree cover","Change in vegetation and water cover","Habitat areas restored","Habitat types restored",
-  #   "Protected areas","Protection of Key Biodiversity Areas","Built-up Key Biodiversity Areas",
-  #   # Greenspace access
-  #   "Recreational space per capita","Urban open space for public use","Proximity to public open space","Proximity to tree cover",
-  #   # Climate mitigation
-  #   "Greenhouse gas emissions","Climate change impact of trees"
-  # )
+  
   
 } else if(selected_project == "cities4forests"){
   default_city = "ETH-Addis_Ababa"
@@ -62,21 +48,6 @@ if(selected_project == "urbanshift"){
   logo_height = "15px"
   default_theme = "Land protection and restoration"
   default_indicator = "Permeable areas"
-  # default_theme = "Greenspace access"
-  # default_indicator = "Recreational space per capita"
-  # indicators_labels_project= c(
-  #   # Health - Heat
-  #   "Extreme heat hazard","Land surface temperature","Surface reflectivity","Built land without tree cover",
-  #   # Health - Air Quality
-  #   "Air pollutant emissions","High pollution days","Exposure to PM 2.5",
-  #   # Flooding
-  #   "Exposure to coastal and river flooding","Extreme precipitation hazard","Land near natural drainage","Impervious surfaces",
-  #   "Vegetation cover in built areas","Vegetation cover in riparian areas","Vulnerable steep slopes",
-  #   # Greenspace access
-  #   "Urban open space for public use","Proximity to public open space","Proximity to tree cover",
-  #   # Climate mitigation
-  #   "Greenhouse gas emissions","Climate change impact of trees"
-  # )
 }
 
 
@@ -121,8 +92,6 @@ boundary_georef = read.csv(paste(aws_s3_path,
                                  sep = ""),
                            fileEncoding="UTF-8-BOM")
 
-# boundary_georef = boundary_georef %>% 
-#   filter(project_name == selected_project) 
 
 
 cities = boundary_georef %>% 
@@ -137,6 +106,50 @@ cities_no_tml_data = c("BRA-Salvador","MEX-Monterrey",
                        "ARG-Mendoza", "ARG-Mer_del_plata", "ARG-Ushuaia", 
                        "ARG-Buenos_Aires", "BRA-Florianopolis", "CHN-Chengdu", 
                        "CHN-Chongqing", "CHN-Ningbo")
+
+cities_no_wdpa_data = c("BRA-Belem",
+                        "ARG-Mar_del_Plata",
+                        "ARG-Ushuaia",
+                        "BRA-Teresina",
+                        "BRA-Salvador",
+                        "CHN-Ningbo",
+                        "IDN-Balikpapan",
+                        "IDN-Semarang",
+                        "IND-Chennai",
+                        "IND-Pune",
+                        "IND-Surat",
+                        "MAR-Marrakech",
+                        "RWA-Kigali",
+                        "COL-Barranquilla",
+                        "COG-Brazzaville")
+
+cities_no_kba_data = c("BRA-Belem",
+                       "BRA-Teresina",
+                       "BRA-Salvador",
+                       "IDN-Semarang",
+                       "MAR-Marrakech",
+                       "IND-Surat",
+                       "COG-Brazzaville",
+                       "COL-Barranquilla")
+
+cities_no_vascular_plant_data = c("COD-Bukavu",
+                                  "COD-Uvira",
+                                  "ETH-Addis_Ababa",
+                                  "ETH-Dire_Dawa",
+                                  "IDN-Bitung",
+                                  "RWA-Musanze")
+
+cities_no_birds_data = c("CHN-Ningbo",
+                         "COD-Bukavu",
+                         "ETH-Dire_Dawa",
+                         "IDN-Palembang")
+
+cities_no_arthropods_data = c("COD-Bukavu",
+                              "COD-Uvira",
+                              "ETH-Dire_Dawa")
+
+
+
 
 ############### Load data: indicators
 
@@ -263,6 +276,7 @@ indicators = indicators %>%
   mutate(BIO_1_percentNaturalArea = 100 * BIO_1_percentNaturalArea) %>% 
   mutate(BIO_2_habitat_connectivity = 1 * BIO_2_habitat_connectivity) %>% 
   mutate(BIO_3_percentBirdsinBuiltupAreas = na_if(BIO_3_percentBirdsinBuiltupAreas, -9999)) %>% 
+  mutate(BIO_3_percentBirdsinBuiltupAreas = 100 * BIO_3_percentBirdsinBuiltupAreas) %>% 
   mutate(BIO_4_numberPlantSpecies = na_if(BIO_4_numberPlantSpecies, -9999)) %>% 
   mutate(BIO_5_numberBirdSpecies = na_if(BIO_5_numberBirdSpecies, -9999)) %>% 
   mutate(BIO_6_numberArthropodSpecies = na_if(BIO_6_numberArthropodSpecies, -9999)) %>% 
@@ -349,15 +363,14 @@ data.availability.fun = function(selected_indicator_values, indicator_name){
   return(data_availability_msg)
 }
 
+
+
+
 ############### App
 
 ui = tagList(
   useShinyjs(),
   navbarPage(title = div("Cities Indicators",
-                         # img(href= "https://cities4forests.com/",
-                         #     src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png",
-                         #     height = "15px",
-                         #     style = "top: -3px;right: -900px;padding-right:10px;"),
                          tags$a(
                            href="https://cities4forests.com/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png", 
@@ -366,16 +379,12 @@ ui = tagList(
                                     height="15p")
                          ),
                          
-                         # img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png",
-                         #     height = "30px",
-                         #     style = "top: -3px;
-                         #            right: -100px;padding-right:10px;"),
                          
                          tags$a(
                            href="https://www.shiftcities.org/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
                                     # title="Example Image Link", 
-                                    style = "top: -3px;right: -900px;padding-right:40px;",
+                                    style = "top: -3px;right: -900px;padding-right:30px;",
                                     height="30px")
                          ),
   ),
@@ -387,9 +396,13 @@ ui = tagList(
   
   # # google analytics
   # tags$head(includeHTML(("google-analytics.html"))),
+  # tags$head(includeScript(paste0(getwd(), "/www/google-analytics.html"))),
+  tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/google-analytics.html")),
   # 
   # # hotjar
   # tags$head(includeScript(paste0(getwd(), "/www/hotjar.js"))),
+  tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/hotjar.js")),
+  
   
   ### Indicators tab ----
   tabPanel("Indicators",
@@ -519,34 +532,6 @@ ui = tagList(
                                               href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment"))),
                                 
                                 
-                                # # font size=3px; weight=100; color=\"#2A553E\
-                                # tabPanel("About", 
-                                #          h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
-                                #          h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
-                                #          h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
-                                #          h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),
-                                #          h5("Additional information on this project, the general methods, and methods and limitations of specific indicators is available in the associated ", 
-                                #             a("technical note.", 
-                                #               href = "https://www.wri.org/research/calculating-indicators-global-geospatial-datasets-urban-environment")),
-                                #          h5("Data policy ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                #          h5("Cities Indicators Dashboard has an open data policy, intended to provide information free of constraints and restrictions on use. All of the data, graphics, charts and other material provided carry the",
-                                #             a("Creative Commons CC BY 4.0", 
-                                #               href = "https://creativecommons.org/licenses/by/4.0/"),"licensing"),
-                                #          h5("This means you are able to download, share, and adapt the data for any use, including commercial and noncommercial uses. You must attribute the data appropriately, using the information provided in the data set description"),
-                                #          h5("Terms of service ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                #          h5("Through accessing the Cities Indicators site you have acknowledged and agreed to ",
-                                #             a("environmental data platforms Terms of Service", 
-                                #               href = "https://www.globalforestwatch.org/terms/")),
-                                #          h5("Contact ", style = 'font size=3px;font-weight: bold;font color=\"#2A553E'),
-                                #          h5("Questions, comments, or feedback? Help us stregthen Cities Indicators Dashboard!"),
-                                #          actionButton(inputId = "email", 
-                                #                       icon = icon("envelope", lib = "font-awesome"), 
-                                #                       a("Contact Us", 
-                                #                         href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
-                                #                       # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                #                       style="length:40px")
-                                # ),
-                                # 
                     )
              )
            ),
@@ -1249,6 +1234,7 @@ server <- function(input, output, session) {
                                                                                            "ARG-Mar_del_Plata",
                                                                                            "ARG-Ushuaia",
                                                                                            "BRA-Teresina",
+                                                                                           "BRA-Salvador",
                                                                                            "CHN-Ningbo",
                                                                                            "IDN-Balikpapan",
                                                                                            "IDN-Semarang",
@@ -1256,7 +1242,9 @@ server <- function(input, output, session) {
                                                                                            "IND-Pune",
                                                                                            "IND-Surat",
                                                                                            "MAR-Marrakech",
-                                                                                           "RWA-Kigali")){
+                                                                                           "RWA-Kigali",
+                                                                                           "COL-Barranquilla",
+                                                                                           "COG-Brazzaville")){
       
       wdpa_data_path = paste(aws_s3_path,
                              "data/biodiversity/WDPA/",
@@ -1273,7 +1261,13 @@ server <- function(input, output, session) {
     # layers: Key Biodiversity Areas ----
     if(input$indicator %in% c("Protection of Key Biodiversity Areas",
                               "Built-up Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
-                                                                                      "BRA-Teresina")){
+                                                                                      "BRA-Teresina",
+                                                                                      "BRA-Salvador",
+                                                                                      "IDN-Semarang",
+                                                                                      "MAR-Marrakech",
+                                                                                      "IND-Surat",
+                                                                                      "COG-Brazzaville",
+                                                                                      "COL-Barranquilla")){
       
       kba_data_path = paste(aws_s3_path,
                             "data/biodiversity/KBA/",
@@ -1290,7 +1284,12 @@ server <- function(input, output, session) {
     
     
     # layers: GBIF - Vascular plant species  ----
-    if(input$indicator %in% c("Vascular plant species")){
+    if(input$indicator %in% c("Vascular plant species") & !input$city %in% c("COD-Bukavu",
+                                                                             "COD-Uvira",
+                                                                             "ETH-Addis_Ababa",
+                                                                             "ETH-Dire_Dawa",
+                                                                             "IDN-Bitung",
+                                                                             "RWA-Musanze")){
       
       
       gbif_Tracheophyta_data_path = paste(aws_s3_path,
@@ -1313,7 +1312,10 @@ server <- function(input, output, session) {
     
     # layers: GBIF - Bird species  ----
     if(input$indicator %in% c("Bird species",
-                              "Biodiversity in built-up areas (birds)")){
+                              "Biodiversity in built-up areas (birds)")  & !input$city %in% c("CHN-Ningbo",
+                                                                                              "COD-Bukavu",
+                                                                                              "ETH-Dire_Dawa",
+                                                                                              "IDN-Palembang")){
       
       
       gbif_Aves_data_path = paste(aws_s3_path,
@@ -1335,7 +1337,9 @@ server <- function(input, output, session) {
     
     
     # layers: GBIF - Arthropoda  ----
-    if(input$indicator %in% c("Arthropod species")){
+    if(input$indicator %in% c("Arthropod species") & !input$city %in% c("COD-Bukavu",
+                                                                        "COD-Uvira",
+                                                                        "ETH-Dire_Dawa")){
       
       
       gbif_Arthropod_data_path = paste(aws_s3_path,
@@ -1903,11 +1907,7 @@ server <- function(input, output, session) {
     }
     
     # BIO-5: Bird species ----
-    if(input$indicator  %in% c("Bird species")  & !input$city %in% c("CHN-Ningbo",
-                                                                     "COD-Bukavu",
-                                                                     "COD-Uvira",
-                                                                     "ETH-Dire_Dawa",
-                                                                     "IDN-Palembang")){
+    if(input$indicator  %in% c("Bird species")  & !input$city %in% cities_no_birds_data){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Aves$lat,
@@ -1942,9 +1942,7 @@ server <- function(input, output, session) {
     }
     
     # BIO-6: Arthropod species ----
-    if(input$indicator  %in% c("Arthropod species") & !input$city %in% c("COD-Bukavu",
-                                                                         "COD-Uvira",
-                                                                         "ETH-Dire_Dawa")){
+    if(input$indicator  %in% c("Arthropod species") & !input$city %in% cities_no_arthropods_data){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Arthropod$lat,
@@ -2394,23 +2392,7 @@ server <- function(input, output, session) {
     }
     
     # LND-6: Protected areas ----
-    if(input$indicator %in% c("Protected areas") & !input$city %in% c("BRA-Belem",
-                                                                      "ARG-Mar_del_Plata",
-                                                                      "ARG-Ushuaia",
-                                                                      "BRA-Teresina",
-                                                                      "CHN-Ningbo",
-                                                                      "IDN-Balikpapan",
-                                                                      "IDN-Semarang",
-                                                                      "IND-Chennai",
-                                                                      "IND-Pune",
-                                                                      "IND-Surat",
-                                                                      "MAR-Marrakech",
-                                                                      "RWA-Kigali",
-                                                                      "COD-Bukavu",
-                                                                      "RWA-Musanze",
-                                                                      "ETH-Addis_Ababa",
-                                                                      "COL-Barranquilla",
-                                                                      "MDG-Antananarivo")){
+    if(input$indicator %in% c("Protected areas") & !input$city %in% cities_no_wdpa_data){
       m = m %>% 
         # plot layer: OSM 
         addPolygons(data = wdpa,
@@ -2439,19 +2421,7 @@ server <- function(input, output, session) {
     
     
     # LND-7: Protection of Key Biodiversity Areas ----
-    if(input$indicator %in% c("Protection of Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
-                                                                                           "ARG-Mar_del_Plata",
-                                                                                           "ARG-Ushuaia",
-                                                                                           "BRA-Teresina",
-                                                                                           "CHN-Ningbo",
-                                                                                           "IDN-Balikpapan",
-                                                                                           "IDN-Semarang",
-                                                                                           "IND-Chennai",
-                                                                                           "IND-Pune",
-                                                                                           "IND-Surat",
-                                                                                           "MAR-Marrakech",
-                                                                                           "RWA-Kigali",
-                                                                                           "ETH-Addis_Ababa")){
+    if(input$indicator %in% c("Protection of Key Biodiversity Areas") & !input$city %in% cities_no_kba_data & !input$city %in% cities_no_wdpa_data){
       m = m %>% 
         # plot layer: WDPA 
         addPolygons(data = wdpa,
@@ -2493,8 +2463,7 @@ server <- function(input, output, session) {
     
     
     # LND-8: Built-up Key Biodiversity Areas ----
-    if(input$indicator %in% c("Built-up Key Biodiversity Areas") & !input$city %in% c("BRA-Belem",
-                                                                                      "BRA-Teresina")){
+    if(input$indicator %in% c("Built-up Key Biodiversity Areas") & !input$city %in% cities_no_kba_data){
       m = m %>% 
         # plot layer: KBA 
         addPolygons(data = kba,
@@ -3127,7 +3096,7 @@ server <- function(input, output, session) {
     } else if(input$indicator %in% c("Vascular plant species",
                                      "Bird species",
                                      "Arthropod species",
-                                     "Connectivity of ecological networks")){
+                                     "Connectivity of natural lands")){
       city_wide_indicator_value_unit = ""
       
     } else if(input$indicator %in% c("Recreational space per capita")){

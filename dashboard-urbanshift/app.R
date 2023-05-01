@@ -384,23 +384,22 @@ ui = tagList(
                            href="https://www.shiftcities.org/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
                                     # title="Example Image Link", 
-                                    style = "top: -3px;right: -900px;padding-right:40px;",
+                                    style = "top: -3px;right: -900px;padding-right:10px;",
                                     height="30px")
                          ),
   ),
   
   # tags$style(HTML(".navbar-header { width:100% }
   #                  .navbar-brand {width:100%;text-align: center;font-size: 30px;height: 25px;}")),
+  tags$style(HTML(".navbar-header { width:70% }
+                   .navbar-brand {width:70%;font-size: 20px;height: 25px;}")),
   windowTitle="Cities Indicators",
   id = "active_tab",
   
-  # # google analytics
-  # tags$head(includeHTML(("google-analytics.html"))),
-  # tags$head(includeScript(paste0(getwd(), "/www/google-analytics.html"))),
+  # google analytics
   tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/google-analytics.html")),
-  # 
-  # # hotjar
-  # tags$head(includeScript(paste0(getwd(), "/www/hotjar.js"))),
+  
+  # hotjar
   tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/hotjar.js")),
   
   
@@ -541,7 +540,12 @@ ui = tagList(
   ),
   ### Indicators tab ----
   tabPanel("About",
-           h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities."),
+           h5("This site allows users to explore indicators and geospatial datasets related to the urban environment for many cities, including cities participating in",
+              a("Cities4Forests", 
+                href = "https://cities4forests.com/"),
+              "and",
+              a("UrbanShift", 
+                href = "https://www.shiftcities.org/")),
            h5("Indicators are organized in seven themes. The four menus on the left of the screen allow users to select city groups, a city of interest, an indicator theme and a specific indicators."),
            h5("Indicator results can be viewed at the city scale as summary value in comparison to the other cities in the selected city groups (Benchmark tab). Results can also be reviewed at the sub-city scale as a Table, Chart and, for many cities, a Map."),
            h5("These views can be navigated between using the tabs across to top of the main window, Geospatial and tabular versions of the data in each view can be download for offline use. Details about each indicator is available in the Definitions tab."),

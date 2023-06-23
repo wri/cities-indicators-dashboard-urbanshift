@@ -34,24 +34,28 @@ library(shinycssloaders)
 selected_project = "urbanshift"
 # selected_project = "cities4forests"
 
-if(selected_project == "urbanshift"){
-  default_city = "BRA-Teresina"
-  logo_file = "logo_urbanshift.png"
-  logo_height = "30px"
-  default_theme = "Land protection and restoration"
-  default_indicator = "Permeable areas"
-  
-  
-} else if(selected_project == "cities4forests"){
-  default_city = "ETH-Addis_Ababa"
-  logo_file = "logo_c4f.png"
-  logo_height = "15px"
-  default_theme = "Land protection and restoration"
-  default_indicator = "Permeable areas"
-}
+# if(selected_project == "urbanshift"){
+#   default_city =  "RWA-Kigali"#"BRA-Teresina"
+#   logo_file = "logo_urbanshift.png"
+#   logo_height = "30px"
+#   default_theme = "Land protection and restoration"
+#   default_indicator = "Permeable areas"
+#   
+#   
+# } else if(selected_project == "cities4forests"){
+#   default_city = "ETH-Addis_Ababa"
+#   logo_file = "logo_c4f.png"
+#   logo_height = "15px"
+#   default_theme = "Land protection and restoration"
+#   default_indicator = "Permeable areas"
+# } 
 
 
-
+default_city =  "BRA-Teresina" ##"RWA-Kigali"
+logo_file = "logo_urbanshift.png"
+logo_height = "30px"
+default_theme = "Land protection and restoration"
+default_indicator = "Permeable areas"
 
 
 # define aws s3 path
@@ -345,7 +349,7 @@ data.availability.fun = function(selected_indicator_values, indicator_name){
   if(sum(is.na(selected_indicator_values)) == length(selected_indicator_values))
   {
     if(indicator_name %in% c("Extreme heat hazard",
-                             "Extreme precepitation hazard",
+                             "Extreme precipitation hazard",
                              "Bird species")){
       data_availability_msg = ""
     } else {
@@ -415,7 +419,8 @@ ui = tagList(
                     selectInput(inputId = "project",
                                 label = tags$span(style="color: #242456;","City group"),
                                 choices = c("urbanshift",'cities4forests'),
-                                selected = selected_project,
+                                # selected = selected_project,
+                                selected = c("urbanshift",'cities4forests'),
                                 multiple = TRUE,
                                 width = '100%'),
                     

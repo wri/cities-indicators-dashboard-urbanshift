@@ -1,6 +1,5 @@
 name: Deploy to AWS
 on:
-  on:
   push:
     branches:
       - main
@@ -18,3 +17,4 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: whoami
+        

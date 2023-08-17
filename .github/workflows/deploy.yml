@@ -1,9 +1,11 @@
 name: Deploy to AWS
+
 on:
   push:
     branches:
-      - main
+      - staging
   workflow_dispatch:
+
 jobs:
   ssh-deploy:
     name: ssh-deploy
@@ -16,5 +18,12 @@ jobs:
         username: ${{ secrets.AWS_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.SSH_PORT }}
-        script: whoami
+        script: |
+          cd ~/cities-indicators-dashboard-urbanshift
+          git fetch --all
+          git checkout staging
+          docker kill staging-container
+          docker build . -t staging-image
+          docker run -d --rm -p 4949:3838 --name staging-container staging-image
+
         

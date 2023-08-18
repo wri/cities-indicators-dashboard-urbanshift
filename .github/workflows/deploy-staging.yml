@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy to AWS Staging Environment
 
 on:
   push:
@@ -25,5 +25,4 @@ jobs:
           docker kill staging-container
           docker build . -t staging-image
           docker run -d --rm -p 4949:3838 --name staging-container staging-image
-
         

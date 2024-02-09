@@ -23,6 +23,8 @@ library(shinyjs)
 
 library(shinycssloaders)
 
+# library(leaflet.extras2)
+
 # library(leaflet.multiopacity)
 
 #library(shinyscreenshot)
@@ -374,7 +376,7 @@ data.availability.fun = function(selected_indicator_values, indicator_name){
 
 ui = tagList(
   useShinyjs(),
-  navbarPage(title = div("Cities Indicators",
+  navbarPage(title = div("Cities Indicators Dashboard",
                          tags$a(
                            href="https://cities4forests.com/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png", 
@@ -2203,6 +2205,9 @@ server <- function(input, output, session) {
     
     # LND-1: Permeable areas ----
     if(input$indicator %in% c("Permeable areas")){
+      
+      # url = "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/35/H/KC/2023/7/S2A_35HKC_20230713_0_L2A/TCI.tif"
+      
       m = m %>% 
         # plot layer:Impervious surfaces 
         addRasterImage(city_impervious_boundary,
@@ -2211,6 +2216,16 @@ server <- function(input, output, session) {
                        maxBytes = 100 * 1024 * 1024,
                        project=FALSE,
                        group = "Impervious surfaces (Tsinghua GAIA)") %>% 
+        # # add cogs
+        # addMapPane("cog", zIndex = 500) %>%
+        # leafem:::addCOG(
+        #   url = url
+        #   , group = "cog-layer"
+        #   , opacity = 0.7
+        #   , options = list(pane = "cog")
+        #   , resolution = 96
+        #   , autozoom = TRUE
+        # ) %>%
         # Layers control 
         addLayersControl(
           baseGroups = c("Streets and sites (OpenStreetMap)",
@@ -2219,10 +2234,13 @@ server <- function(input, output, session) {
                          "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
-                            "Impervious surfaces (Tsinghua GAIA)"),
+                            "Impervious surfaces (Tsinghua GAIA)"
+                            # ,"cog-layer"
+                            ),
           options = layersControlOptions(collapsed = TRUE)
         ) %>% 
-        hideGroup(c("Impervious surfaces (Tsinghua GAIA)")) 
+        hideGroup(c("Impervious surfaces (Tsinghua GAIA)",
+                    "cog-layer")) 
     }
     
     # LND-2: Tree cover ----
@@ -2994,6 +3012,10 @@ server <- function(input, output, session) {
     # plot  map   ------
     output$indicator_map <- renderLeaflet({
       m 
+        # addEasyprint(options = easyprintOptions(
+        #   title = 'Print map',
+        #   position = 'bottomleft',
+        #   exportOnly = TRUE))
       # addOpacityControls(collapsed = TRUE,
       #                    category = c("image"),
       #                    size = "s",

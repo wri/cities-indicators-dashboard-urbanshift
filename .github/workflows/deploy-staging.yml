@@ -19,7 +19,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          cd ~/cities-indicators-dashboard-urbanshift
+          cd ~/cities-indicators-dashboard-staging
           git fetch --all
           git checkout staging
           docker kill staging-container

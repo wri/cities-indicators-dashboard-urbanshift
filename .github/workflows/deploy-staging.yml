@@ -1,0 +1,28 @@
+name: Deploy to AWS Staging Environment
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+jobs:
+  ssh-deploy:
+    name: ssh-deploy
+    runs-on: ubuntu-20.04
+    steps:
+    - name: cd in repo dir
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.AWS_IP }}
+        username: ${{ secrets.AWS_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        script: |
+          cd ~/cities-indicators-dashboard-staging
+          git fetch --all
+          git checkout staging
+          docker kill staging-container
+          docker build . -t staging-image
+          docker run -d --rm -p 4949:3838 --name staging-container staging-image
+        

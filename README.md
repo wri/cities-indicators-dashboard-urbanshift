@@ -1,5 +1,136 @@
 # cities-indicators-dashboard-urbanshift
 
+An R [Shiny](https://shiny.posit.co/) dashboard presenting city-level sustainability
+indicators — land use, tree cover, biodiversity, air quality, flooding, heat, population
+and more — for the cities participating in [UrbanShift](https://www.shiftcities.org/)
+and [Cities4Forests](https://cities4forests.com/).
+
+The whole application is a single Shiny file, `dashboard-urbanshift/app.R` (~3,800
+lines), which builds seven tabs: **Indicators**, **Map**, **Table**, **Chart**,
+**Benchmark**, **Definitions** and **About**. It holds no data of its own — every
+indicator table, boundary file, raster and image is fetched over HTTPS at startup and
+on demand, from the location described in [Data hosting](#data-hosting-s3--cloudfront)
+below. There is no database and no backend service.
+
+A `selected_project` flag near the top of `app.R` switches the branding and city list
+between the two projects:
+
+```r
+selected_project = "urbanshift"
+# selected_project = "cities4forests"
+```
+
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `dashboard-urbanshift/app.R` | The entire application |
+| `dashboard-urbanshift/www/` | Static assets served by Shiny (logos, Weglot translation scripts) |
+| `Dockerfile` | Builds the container: `rocker/shiny:4.2.1` + R packages pinned to a 2022-09-02 CRAN snapshot |
+| `deploy/` | Terraform for the EC2 host (instance, security group, elastic IP, SSM role) |
+| `.github/workflows/` | Staging deploy workflow — see the caveat under [Deployment](#deployment) |
+
+## Branches
+
+Several long-lived branches are deployed independently. There is no single "current"
+branch, and `main` is not deployed anywhere.
+
+| Branch | Where it runs |
+| --- | --- |
+| `combined-app` | **Production** — port 3838, container `combined-app` |
+| `staging` | **Staging** — port 4949, container `staging-container` |
+| `main` | Not deployed. Still points at the retired `cities-urbanshift` bucket. |
+
+## Running locally
+
+Requires R with the packages listed at the top of `app.R`, plus GDAL, GEOS, PROJ and
+udunits for `sf`/`raster`:
+
+```sh
+brew install gdal geos proj udunits
+Rscript -e 'install.packages(c("shiny","plotly","leaflet","leaflet.extras","plyr",
+  "dplyr","shinyWidgets","rnaturalearth","tidyverse","sf","httr","jsonlite","raster",
+  "data.table","DT","RColorBrewer","shinydisconnect","shinyjs","shinycssloaders"))'
+
+Rscript -e 'shiny::runApp("dashboard-urbanshift", port = 3838, launch.browser = TRUE)'
+```
+
+`app.R` also calls `library(rgdal)` and `library(rgeos)`. Both packages were retired
+from CRAN in October 2023 and cannot be installed on current R. Neither is used
+anywhere else in the file, so the two `library()` calls have to be removed (or the app
+run on R old enough to still have them) before it will start locally. The container is
+unaffected because it pins a 2022 CRAN snapshot that still contains both.
+
+Data is read from the live CloudFront distribution, so a local run needs no AWS
+credentials but does need network access.
+
+## Deployment
+
+Both containers run on a single EC2 instance in account **540362055257**
+(`us-east-1`):
+
+| | |
+| --- | --- |
+| Instance | `i-08cfa066a7178527b` (`IndicatorsAppServerInstance`) |
+| Public IP | `52.72.202.129` · private `172.31.96.97` |
+| Access | **SSM Session Manager** (there is no SSH key workflow) |
+
+Public traffic reaches it through two load balancers, neither of which is managed by
+the Terraform in `deploy/`:
+
+```
+citiesindicators.wri.org
+  -> NLB CitiesIndicatorStaticLB  (44.212.116.171; listeners 80, 443, 4949)
+  -> ALB CitiesIndicatorLB
+  -> i-08cfa066a7178527b  :3838 (production) / :4949 (staging)
+```
+
+Staging is reachable at `https://citiesindicators.wri.org:4949/`.
+
+### Deploying a change
+
+Deployment is **manual**. Connect to the instance with SSM, then rebuild and restart
+the relevant container:
+
+```sh
+# production (combined-app branch)
+cd ~/cities-indicators-dashboard        # check the actual path on the box
+git fetch --all && git checkout combined-app && git pull
+docker build . -t combined-app
+docker kill combined-app && docker rm combined-app
+docker run -d -p 3838:3838 --name combined-app --restart on-failure combined-app
+
+# staging (staging branch)
+cd ~/cities-indicators-dashboard-staging
+git fetch --all && git checkout staging && git pull
+docker build . -t staging-image
+docker kill staging-container && docker rm staging-container
+docker run -d -p 4949:3838 --name staging-container --restart on-failure staging-image
+```
+
+The `--restart on-failure` flag matters: containers started without it do not come back
+after an instance reboot. A copy of these commands is kept in `~/README` on the host.
+
+### The GitHub Actions workflow does not run
+
+`.github/workflows/deploy-staging.yml` is triggered by pushes to `staging`, but the
+file exists only on `main` and `github-action`. GitHub reads `push` workflows from the
+branch being pushed to, so pushing to `staging` fires nothing — the workflow has never
+run. To make it work, the workflow file has to be present on `staging` itself, and its
+four secrets (`AWS_IP`, `AWS_USERNAME`, `SSH_KEY`, `SSH_PORT`) have to be populated and
+an SSH path opened to a host that is currently SSM-only.
+
+### Terraform
+
+`deploy/` provisions the instance, its security group, elastic IP and SSM IAM role.
+State has drifted from reality: the security group opens ports 80 and 3838 but not
+4949, and neither load balancer nor the CloudFront setup below is represented. Treat
+`deploy/` as the original bootstrap rather than an accurate model of what is running.
+
+A legacy `dashboard-urbanshift/rsconnect/` profile targets shinyapps.io
+(`wri-cities/indicators-urbanshift-dashboard`) from an earlier hosting arrangement. It
+is not part of the current deployment.
+
 ## Data hosting: S3 + CloudFront
 
 The dashboard reads all of its data (indicator CSVs, boundaries, rasters, logos,

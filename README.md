@@ -26,6 +26,7 @@ selected_project = "urbanshift"
 | --- | --- |
 | `dashboard-urbanshift/app.R` | The entire application |
 | `dashboard-urbanshift/www/` | Static assets served by Shiny (logos, Weglot translation scripts) |
+| `deploy.sh` | Builds and restarts a container on the app server — see [Deployment](#deployment) |
 | `Dockerfile` | Builds the container: `rocker/shiny:4.2.1` + R packages pinned to a 2022-09-02 CRAN snapshot |
 | `deploy/` | Terraform for the EC2 host (instance, security group, elastic IP, SSM role) |
 | `.github/workflows/` | Staging deploy workflow — see the caveat under [Deployment](#deployment) |
@@ -89,27 +90,47 @@ Staging is reachable at `https://citiesindicators.wri.org:4949/`.
 
 ### Deploying a change
 
-Deployment is **manual**. Connect to the instance with SSM, then rebuild and restart
-the relevant container:
+Deployment is **manual**. Connect to the instance with SSM Session Manager, then run
+`deploy.sh` from the repository checkout:
 
 ```sh
-# production (combined-app branch)
-cd ~/cities-indicators-dashboard        # check the actual path on the box
-git fetch --all && git checkout combined-app && git pull
-docker build . -t combined-app
-docker kill combined-app && docker rm combined-app
-docker run -d -p 3838:3838 --name combined-app --restart on-failure combined-app
-
-# staging (staging branch)
-cd ~/cities-indicators-dashboard-staging
-git fetch --all && git checkout staging && git pull
-docker build . -t staging-image
-docker kill staging-container && docker rm staging-container
-docker run -d -p 4949:3838 --name staging-container --restart on-failure staging-image
+./deploy.sh <branch> <image> [port] [container]
 ```
 
-The `--restart on-failure` flag matters: containers started without it do not come back
-after an instance reboot. A copy of these commands is kept in `~/README` on the host.
+```sh
+# staging  (port 4949)
+./deploy.sh staging staging-image 4949
+
+# production  (port 3838)
+./deploy.sh combined-app combined-app 3838
+```
+
+`port` defaults to `4949`. `container` defaults to the image name, with a trailing
+`-image` rewritten to `-container`, which gives `staging-image` -> `staging-container`
+and `combined-app` -> `combined-app`.
+
+The script checks out and pulls the branch, builds the image, replaces the container
+(always with `--restart on-failure`, so it survives an instance reboot), then polls the
+port until the app answers and prints the data host from the served page so you can see
+which bucket or distribution the new build reads from.
+
+Two safeguards worth knowing about:
+
+- It **refuses to run if the working tree is dirty**, rather than let `git checkout`
+  discard uncommitted work. The checkout on the server has carried stray edits before.
+- It **retags the outgoing image** as `<image>-previous` before building. If the new
+  container fails to serve, the script prints the logs and the exact command to roll
+  back to that image.
+
+Doing it by hand is the same four steps:
+
+```sh
+cd ~/cities-indicators-dashboard-urbanshift
+git fetch --all && git checkout <branch> && git pull
+docker build . -t <image>
+docker rm -f <container>
+docker run -d -p <port>:3838 --name <container> --restart on-failure <image>
+```
 
 ### The GitHub Actions workflow does not run
 

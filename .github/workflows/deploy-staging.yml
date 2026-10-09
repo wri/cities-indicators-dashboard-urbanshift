@@ -18,12 +18,14 @@ jobs:
         username: ${{ secrets.AWS_USERNAME }}
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.SSH_PORT }}
+        command_timeout: 60m
         script: |
-          cd ~/cities-indicators-dashboard-staging
+          set -e
+          cd ~/cities-indicators-dashboard-urbanshift-staging
           git fetch --all
           git checkout staging
           git pull --ff-only
-          docker kill staging-container
           docker build . -t staging-image
-          docker run -d --rm -p 4949:3838 --name staging-container staging-image
-        
+          docker rm -f staging-container || true
+          docker run -d -p 4949:3838 --name staging-container --restart on-failure staging-image
+

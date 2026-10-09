@@ -1,0 +1,99 @@
+name: Deploy
+
+# Pushing to staging deploys staging; pushing to combined-app deploys production.
+on:
+  push:
+    branches:
+      - staging
+      - combined-app
+  workflow_dispatch:
+
+# One deploy at a time per branch; the newest queued run goes after the current one.
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+    # production requires approval (repo Settings > Environments). Each environment
+    # only accepts its own branch, so runs from any other branch are rejected.
+    environment: ${{ github.ref_name == 'combined-app' && 'production' || 'staging' }}
+    steps:
+    - name: Pick target
+      id: target
+      run: |
+        case "${{ github.ref_name }}" in
+          staging)
+            echo "dir=cities-indicators-dashboard-urbanshift-staging" >> "$GITHUB_OUTPUT"
+            echo "image=staging-image" >> "$GITHUB_OUTPUT"
+            echo "container=staging-container" >> "$GITHUB_OUTPUT"
+            echo "port=4949" >> "$GITHUB_OUTPUT"
+            ;;
+          combined-app)
+            echo "dir=cities-indicators-dashboard-urbanshift-combined-app" >> "$GITHUB_OUTPUT"
+            echo "image=combined-app" >> "$GITHUB_OUTPUT"
+            echo "container=combined-app" >> "$GITHUB_OUTPUT"
+            echo "port=3838" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "No deploy target for branch '${{ github.ref_name }}'" >&2
+            exit 1
+            ;;
+        esac
+
+    - name: Build and restart on the app server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.AWS_IP }}
+        username: ${{ secrets.AWS_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}
+        command_timeout: 60m
+        script: |
+          set -e
+          BRANCH='${{ github.ref_name }}'
+          DIR='${{ steps.target.outputs.dir }}'
+          IMAGE='${{ steps.target.outputs.image }}'
+          CONTAINER='${{ steps.target.outputs.container }}'
+          PORT='${{ steps.target.outputs.port }}'
+
+          cd "$HOME/$DIR"
+          git fetch --all
+          git checkout "$BRANCH"
+          git pull --ff-only
+
+          # Keep the outgoing image as the rollback target.
+          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            docker tag "$IMAGE" "$IMAGE-previous"
+          fi
+
+          docker build . -t "$IMAGE"
+          docker rm -f "$CONTAINER" || true
+          docker run -d -p "$PORT:3838" --name "$CONTAINER" --restart unless-stopped "$IMAGE"
+
+          # Wait up to ~2 minutes for the app to answer.
+          code=""
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://localhost:$PORT/" || true)
+            if [ "$code" = "200" ]; then break; fi
+            sleep 2
+          done
+
+          if [ "$code" != "200" ]; then
+            echo "Health check failed (last response: ${code:-none}). Container logs:"
+            docker logs --tail 40 "$CONTAINER" || true
+            if docker image inspect "$IMAGE-previous" >/dev/null 2>&1; then
+              echo "Rolling back to $IMAGE-previous"
+              # Point $IMAGE back at the good build so the next deploy saves it as -previous.
+              docker tag "$IMAGE-previous" "$IMAGE"
+              docker rm -f "$CONTAINER"
+              docker run -d -p "$PORT:3838" --name "$CONTAINER" --restart unless-stopped "$IMAGE-previous"
+            fi
+            exit 1
+          fi
+
+          echo "Healthy: $BRANCH is serving 200 on :$PORT"
+          # Remove untagged leftovers only; never prune -a (it drops the base image).
+          docker image prune -f

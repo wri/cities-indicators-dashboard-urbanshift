@@ -23,6 +23,8 @@ library(shinyjs)
 
 library(shinycssloaders)
 
+# library(leaflet.extras2)
+
 # library(leaflet.multiopacity)
 
 #library(shinyscreenshot)
@@ -374,7 +376,7 @@ data.availability.fun = function(selected_indicator_values, indicator_name){
 
 ui = tagList(
   useShinyjs(),
-  navbarPage(title = div("Cities Indicators",
+  navbarPage(title = div("Cities Indicators Dashboard",
                          tags$a(
                            href="https://cities4forests.com/", 
                            tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png", 
@@ -1703,10 +1705,13 @@ server <- function(input, output, session) {
     
     # indicator layer ----
     m = leaflet(boundary_aoi) %>%
-      addTiles(group = "Streets and sites (OpenStreetMap)") %>%
-      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite (ESRI)") %>%
-      addProviderTiles(providers$Stamen.TonerLite, group = "Light (Stamen)") %>%
-      addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark (CartoDB)") %>%
+      addProviderTiles(providers$Esri.WorldImagery,
+                       group = "Satellite (ESRI)",
+                       options = providerTileOptions(minZoom = 8, maxZoom = 20)) %>%
+      # addTiles(group = "Streets and sites (OpenStreetMap)") %>%
+      # addProviderTiles(providers$Esri.WorldImagery, group = "Satellite (ESRI)") %>%
+      # addProviderTiles(providers$Stamen.TonerLite, group = "Light (Stamen)") %>%
+      # addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark (CartoDB)") %>%
       addScaleBar() %>%
       fitBounds(~as.numeric(st_bbox(boundary_aoi)[1]),
                 ~as.numeric(st_bbox(boundary_aoi)[2]),
@@ -1752,10 +1757,10 @@ server <- function(input, output, session) {
       
       # Layers control
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend),
         options = layersControlOptions(collapsed = TRUE)
@@ -1788,10 +1793,10 @@ server <- function(input, output, session) {
                        layerId = "Natural areas (derived from ESA World Cover)") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -1815,10 +1820,10 @@ server <- function(input, output, session) {
                        layerId = "Natural areas (derived from ESA World Cover)") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Natural areas (derived from ESA World Cover)"),
@@ -1861,10 +1866,10 @@ server <- function(input, output, session) {
                    group = "Bird species clusters") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -1903,10 +1908,10 @@ server <- function(input, output, session) {
                    group = "Vascular plant species clusters") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Vascular plant species",
@@ -1938,10 +1943,10 @@ server <- function(input, output, session) {
                    group = "Bird species clusters") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Bird species",
@@ -1973,10 +1978,10 @@ server <- function(input, output, session) {
                    group = "Arthropod species clusters") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Arthropod species",
@@ -2018,10 +2023,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Open spaces for public use (OpenStreetMap)",
@@ -2062,10 +2067,10 @@ server <- function(input, output, session) {
         # Layers control ----
       addLayersControl(
         # baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Land cover classes (ESA World Cover)",
@@ -2122,10 +2127,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>% 
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Open spaces for public use (OpenStreetMap)",
@@ -2185,10 +2190,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Tree cover (% of pixel with tree cover)",
@@ -2203,6 +2208,9 @@ server <- function(input, output, session) {
     
     # LND-1: Permeable areas ----
     if(input$indicator %in% c("Permeable areas")){
+      
+      # url = "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/35/H/KC/2023/7/S2A_35HKC_20230713_0_L2A/TCI.tif"
+      
       m = m %>% 
         # plot layer:Impervious surfaces 
         addRasterImage(city_impervious_boundary,
@@ -2211,18 +2219,31 @@ server <- function(input, output, session) {
                        maxBytes = 100 * 1024 * 1024,
                        project=FALSE,
                        group = "Impervious surfaces (Tsinghua GAIA)") %>% 
+        # # add cogs
+        # addMapPane("cog", zIndex = 500) %>%
+        # leafem:::addCOG(
+        #   url = url
+        #   , group = "cog-layer"
+        #   , opacity = 0.7
+        #   , options = list(pane = "cog")
+        #   , resolution = 96
+        #   , autozoom = TRUE
+        # ) %>%
         # Layers control 
-        addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
-          overlayGroups = c("Administrative boundaries",
-                            selected_indicator_legend,
-                            "Impervious surfaces (Tsinghua GAIA)"),
-          options = layersControlOptions(collapsed = TRUE)
-        ) %>% 
-        hideGroup(c("Impervious surfaces (Tsinghua GAIA)")) 
+      addLayersControl(
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
+        overlayGroups = c("Administrative boundaries",
+                          selected_indicator_legend,
+                          "Impervious surfaces (Tsinghua GAIA)"
+                          # ,"cog-layer"
+        ),
+        options = layersControlOptions(collapsed = TRUE)
+      ) %>% 
+        hideGroup(c("Impervious surfaces (Tsinghua GAIA)",
+                    "cog-layer")) 
     }
     
     # LND-2: Tree cover ----
@@ -2242,10 +2263,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Tree cover <br> (% of pixel with tree cover)"),
@@ -2312,10 +2333,10 @@ server <- function(input, output, session) {
                   opacity = 1) %>% 
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Change in vegetation and water cover",
@@ -2386,10 +2407,10 @@ server <- function(input, output, session) {
       #                group = "Habitat gain") %>% 
       # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Habitat changes between 2000 and 2020 <br> (derived from UDM GLAD)",
@@ -2418,10 +2439,10 @@ server <- function(input, output, session) {
                       bringToFront = TRUE)) %>% 
         # Layers control 
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Protected areas (WDPA)"),
@@ -2458,10 +2479,10 @@ server <- function(input, output, session) {
                       bringToFront = TRUE)) %>% 
         # Layers control 
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Protected areas (WDPA)",
@@ -2502,10 +2523,10 @@ server <- function(input, output, session) {
                   opacity = 1) %>%
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "Key biodiversity areas <br> (KBA Partnership)",
@@ -2536,10 +2557,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Carbon flux from trees <br> (net, Mg CO2e/ha, 2001 to 2021)"),
@@ -2580,10 +2601,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land surface temperature",
@@ -2628,10 +2649,10 @@ server <- function(input, output, session) {
         
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Surface albedo",
@@ -2672,10 +2693,10 @@ server <- function(input, output, session) {
                   opacity = 1) %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -2720,10 +2741,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control ----
       addLayersControl(
-        baseGroups = c("Streets and sites (OpenStreetMap)",
-                       "Satellite (ESRI)", 
-                       "Light (Stamen)",
-                       "Dark (CartoDB)"),
+        # baseGroups = c("Streets and sites (OpenStreetMap)",
+        #                "Satellite (ESRI)", 
+        #                "Light (Stamen)",
+        #                "Dark (CartoDB)"),
         overlayGroups = c("Administrative boundaries",
                           selected_indicator_legend,
                           "PM2.5 concentration",
@@ -2764,10 +2785,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -2803,10 +2824,10 @@ server <- function(input, output, session) {
                      maxBytes = 8 * 1024 * 1024) %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -2847,10 +2868,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>% 
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -2891,10 +2912,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Land cover classes (ESA World Cover)",
@@ -2934,10 +2955,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Riparian buffer areas",
@@ -2977,10 +2998,10 @@ server <- function(input, output, session) {
                   position = "bottomleft") %>%
         # Layers control
         addLayersControl(
-          baseGroups = c("Streets and sites (OpenStreetMap)",
-                         "Satellite (ESRI)", 
-                         "Light (Stamen)",
-                         "Dark (CartoDB)"),
+          # baseGroups = c("Streets and sites (OpenStreetMap)",
+          #                "Satellite (ESRI)", 
+          #                "Light (Stamen)",
+          #                "Dark (CartoDB)"),
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_legend,
                             "Hillside slopes",
@@ -2994,6 +3015,10 @@ server <- function(input, output, session) {
     # plot  map   ------
     output$indicator_map <- renderLeaflet({
       m 
+      # addEasyprint(options = easyprintOptions(
+      #   title = 'Print map',
+      #   position = 'bottomleft',
+      #   exportOnly = TRUE))
       # addOpacityControls(collapsed = TRUE,
       #                    category = c("image"),
       #                    size = "s",

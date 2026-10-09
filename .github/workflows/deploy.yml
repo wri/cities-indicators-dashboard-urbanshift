@@ -27,8 +27,8 @@ jobs:
         case "${{ github.ref_name }}" in
           staging)
             echo "dir=cities-indicators-dashboard-urbanshift-staging" >> "$GITHUB_OUTPUT"
-            echo "image=staging-image" >> "$GITHUB_OUTPUT"
-            echo "container=staging-container" >> "$GITHUB_OUTPUT"
+            echo "image=staging" >> "$GITHUB_OUTPUT"
+            echo "container=staging" >> "$GITHUB_OUTPUT"
             echo "port=4949" >> "$GITHUB_OUTPUT"
             ;;
           combined-app)

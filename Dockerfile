@@ -41,4 +41,8 @@ COPY ./dashboard-urbanshift/* /srv/shiny-server/
 
 EXPOSE 3838
 
+# WAF blocks UA-less requests
+RUN echo 'GDAL_HTTP_USERAGENT=GDAL' >> /usr/local/lib/R/etc/Renviron.site && \
+    echo 'GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR' >> /usr/local/lib/R/etc/Renviron.site
+
 CMD ["/usr/bin/shiny-server"]

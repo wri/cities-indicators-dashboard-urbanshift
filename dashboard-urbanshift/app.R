@@ -62,7 +62,7 @@ default_indicator = "Permeable areas"
 
 # define aws s3 path
 
-aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
+aws_s3_path = "https://cities-indicators-shiny.wridata.org/"
 
 
 ############### Load data: indicator definition
@@ -169,8 +169,8 @@ indicators = read.csv(paste(aws_s3_path,
 
 # read AQ1 indicator -----
 
-# data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-1-emissionschange2000to2020.csv"
-data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-1-emissionschange2000to2020_new.csv"
+# data_path = paste0(aws_s3_path, "indicators/AQ-1-emissionschange2000to2020.csv")
+data_path = paste0(aws_s3_path, "indicators/AQ-1-emissionschange2000to2020_new.csv")
 
 
 indicators_AQ1 = read.csv(data_path)
@@ -211,7 +211,7 @@ indicators = indicators %>%
 
 # read AQ2 indicator -----
 
-data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/AQ-2-highpollutiondays.csv"
+data_path = paste0(aws_s3_path, "indicators/AQ-2-highpollutiondays.csv")
 
 
 indicators_AQ2 = read.csv(data_path)
@@ -235,7 +235,7 @@ indicators = indicators %>%
 
 # read GHG1 -----
 
-data_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/indicators/GHG-1-ghg-emissions.csv"
+data_path = paste0(aws_s3_path, "indicators/GHG-1-ghg-emissions.csv")
 
 
 indicators_GHG1 = read.csv(data_path)
@@ -379,7 +379,7 @@ ui = tagList(
   navbarPage(title = div("Cities Indicators Dashboard",
                          tags$a(
                            href="https://cities4forests.com/", 
-                           tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png", 
+                           tags$img(src=paste0(aws_s3_path, "imgs/logo/logo_c4f.png"), 
                                     # title="Example Image Link", 
                                     # style = "top: -3px;right: -900px;padding-right:10px;"),
                                     height="15p")
@@ -388,7 +388,7 @@ ui = tagList(
                          
                          tags$a(
                            href="https://www.shiftcities.org/", 
-                           tags$img(src="https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png", 
+                           tags$img(src=paste0(aws_s3_path, "imgs/logo/logo_urbanshift.png"), 
                                     # title="Example Image Link", 
                                     style = "top: -3px;right: -900px;padding-right:10px;",
                                     height="30px")
@@ -403,10 +403,10 @@ ui = tagList(
   id = "active_tab",
   
   # google analytics
-  tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/google-analytics.html")),
+  tags$head(includeScript(paste0(aws_s3_path, "imgs/google-analytics.html"))),
   
   # hotjar
-  tags$head(includeScript("https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/hotjar.js")),
+  tags$head(includeScript(paste0(aws_s3_path, "imgs/hotjar.js"))),
   
   
   ### Indicators tab ----

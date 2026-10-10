@@ -27,6 +27,7 @@ selected_project = "urbanshift"
 | `dashboard-urbanshift/app.R` | The entire application |
 | `dashboard-urbanshift/www/` | Static assets served by Shiny (logos, Weglot translation scripts) |
 | `Dockerfile` | Builds the container: `rocker/shiny:4.2.1` + R packages pinned to a 2022-09-02 CRAN snapshot |
+| `shiny-server.conf` | Shiny Server config copied into the image (adds `preserve_logs`) |
 | `deploy/` | Terraform for the EC2 host (instance, security group, elastic IP, SSM role) |
 | `.github/workflows/deploy.yml` | Deploys `staging` and production — see [Deployment](#deployment) |
 
@@ -112,12 +113,33 @@ Each deploy SSHes to the instance and, for its branch:
 5. Prunes untagged images with `docker image prune -f`. Never use `prune -a` on this
    host: it deletes the `rocker/shiny` base image and cached R package layers, making
    every rebuild slow.
+6. Deletes Shiny log files older than 30 days (see [Logs](#logs)).
 
 Only one deploy per branch runs at a time. The SSH connection details are repo secrets
 (`AWS_IP`, `AWS_USERNAME`, `SSH_PORT`, `SSH_KEY`); the repo is public, so keep server
 details out of workflow logs and this file.
 
 To roll back by hand, revert the change on the branch and let the deploy run.
+
+### Logs
+
+Each container mounts a named Docker volume, `<container>-logs` (`staging-logs`,
+`combined-app-logs`), at `/var/log/shiny-server`. Because `shiny-server.conf` sets
+`preserve_logs true`, every R process leaves a log file there, and the volume
+survives redeploys, so the log from a crash is still there after the container is
+replaced. `docker logs <container>` shows only the current container's output and is
+capped at 5 × 10 MB.
+
+To read the logs on the instance:
+
+```sh
+docker exec staging ls -lt /var/log/shiny-server | head
+docker exec staging tail -n 100 /var/log/shiny-server/<file>.log
+# or, without a running container:
+sudo ls -lt /var/lib/docker/volumes/staging-logs/_data
+```
+
+Files older than 30 days are deleted on each deploy.
 
 ### Terraform
 

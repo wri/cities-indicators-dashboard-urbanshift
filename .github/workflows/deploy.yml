@@ -70,8 +70,15 @@ jobs:
           fi
 
           docker build . -t "$IMAGE"
+
+          # Shiny logs live on a named volume so they survive `docker rm` below.
+          # docker logs are capped; they are lost on rm either way.
+          RUN_OPTS="-d -p $PORT:3838 --name $CONTAINER --restart unless-stopped
+            -v $CONTAINER-logs:/var/log/shiny-server
+            --log-opt max-size=10m --log-opt max-file=5"
+
           docker rm -f "$CONTAINER" || true
-          docker run -d -p "$PORT:3838" --name "$CONTAINER" --restart unless-stopped "$IMAGE"
+          docker run $RUN_OPTS "$IMAGE"
 
           # Wait up to ~2 minutes for the app to answer.
           code=""
@@ -89,11 +96,13 @@ jobs:
               # Point $IMAGE back at the good build so the next deploy saves it as -previous.
               docker tag "$IMAGE-previous" "$IMAGE"
               docker rm -f "$CONTAINER"
-              docker run -d -p "$PORT:3838" --name "$CONTAINER" --restart unless-stopped "$IMAGE-previous"
+              docker run $RUN_OPTS "$IMAGE-previous"
             fi
             exit 1
           fi
 
           echo "Healthy: $BRANCH is serving 200 on :$PORT"
+          # The host has no logrotate; drop Shiny logs older than 30 days on each deploy.
+          docker exec "$CONTAINER" find /var/log/shiny-server -type f -mtime +30 -delete || true
           # Remove untagged leftovers only; never prune -a (it drops the base image).
           docker image prune -f
